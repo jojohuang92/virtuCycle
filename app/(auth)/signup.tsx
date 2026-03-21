@@ -20,14 +20,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SignupScreen() {
-  const [displayName, setDisplayName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   async function handleSignUp() {
-    if (!displayName.trim() || !email.trim() || !password.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
       Alert.alert("Missing fields", "Please fill in all fields.");
       return;
     }
@@ -41,7 +42,7 @@ export default function SignupScreen() {
       const { error } = await signUpWithEmail(
         email.trim(),
         password,
-        displayName.trim(),
+        `${firstName.trim()} ${lastName.trim()}`,
       );
       if (error) {
         if (error.message.includes("environment variables")) {
@@ -104,19 +105,35 @@ export default function SignupScreen() {
               </Text>
             </View>
 
-            {/* Display name */}
+            {/* First name */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Your Name</Text>
+              <Text style={styles.label}>First Name</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Jane Smith"
+                placeholder="John"
                 placeholderTextColor={Colors.outline + "80"}
-                value={displayName}
-                onChangeText={setDisplayName}
+                value={firstName}
+                onChangeText={setFirstName}
                 autoCapitalize="words"
                 autoComplete="name"
                 returnKeyType="next"
-                accessibilityLabel="Your name"
+                accessibilityLabel="First name"
+              />
+            </View>
+
+            {/* Last Name */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Last Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Smith"
+                placeholderTextColor={Colors.outline + "80"}
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+                autoComplete="name"
+                returnKeyType="next"
+                accessibilityLabel="Last name"
               />
             </View>
 

@@ -51,7 +51,7 @@ export async function signUpWithEmail(
     email,
     password,
     options: {
-      data: { display_name: displayName },
+      data: { full_name: displayName, display_name: displayName },
       emailRedirectTo: Linking.createURL("/"),
     },
   });
@@ -127,7 +127,7 @@ export async function getProfile(
   return {
     id: data.id,
     email: data.email,
-    displayName: data.display_name,
+    displayName: data.full_name,
     ecoPoints: data.eco_points ?? 0,
     level: data.level ?? 1,
     co2SavedKg: data.co2_saved_kg ?? 0,
