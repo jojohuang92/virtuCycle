@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VirtuCycle | Accessibility Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-dim": "#d9dad6",
+                        "inverse-surface": "#2e312e",
+                        "tertiary": "#00420c",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#77786b",
+                        "primary": "#343c0a",
+                        "on-tertiary-container": "#82d37d",
+                        "inverse-primary": "#c3cc8c",
+                        "surface-container": "#edeee9",
+                        "on-background": "#1a1c19",
+                        "outline-variant": "#c8c7b8",
+                        "surface-container-high": "#e7e9e4",
+                        "primary-container": "#4b5320",
+                        "primary-fixed-dim": "#c3cc8c",
+                        "on-tertiary-fixed": "#002204",
+                        "primary-fixed": "#dfe8a6",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#5a632e",
+                        "on-surface": "#1a1c19",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f9faf5",
+                        "tertiary-fixed": "#a3f69c",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#5b6236",
+                        "secondary-fixed-dim": "#c4cb96",
+                        "on-secondary-container": "#5f663a",
+                        "surface-container-highest": "#e2e3de",
+                        "surface-container-low": "#f3f4ef",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#bdc787",
+                        "on-primary-fixed": "#191e00",
+                        "surface-bright": "#f9faf5",
+                        "tertiary-container": "#005c15",
+                        "surface": "#f9faf5",
+                        "secondary-fixed": "#e0e7b0",
+                        "inverse-on-surface": "#f0f1ec",
+                        "tertiary-fixed-dim": "#88d982",
+                        "on-primary": "#ffffff",
+                        "on-surface-variant": "#47483c",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#191e00",
+                        "on-secondary-fixed-variant": "#444a21",
+                        "on-tertiary-fixed-variant": "#005312",
+                        "on-primary-fixed-variant": "#434b18",
+                        "secondary-container": "#dde5ad",
+                        "surface-variant": "#e2e3de"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 2.5rem; /* Increased for accessibility */
+        }
+        .tts-label {
+            clip: rect(1px, 1px, 1px, 1px);
+            clip-path: inset(50%);
+            height: 1px;
+            width: 1px;
+            margin: -1px;
+            overflow: hidden;
+            padding: 0;
+            position: absolute;
+        }
+        /* Accessibility Focus States */
+        *:focus {
+            outline: 4px solid #343c0a !important;
+            outline-offset: 4px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Shell -->
+<header class="fixed top-0 w-full flex justify-between items-center px-6 py-5 bg-[#f9faf5]/80 dark:bg-stone-900/80 backdrop-blur-xl z-50">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center border-2 border-primary overflow-hidden">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="Close up portrait of a smiling user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpwZIECyv3xka1yigyGAZNpO-XzfduOcRsRNcYjqWB9qag4Hh0rsBW1VNGI5wzbSa-BOoxw3rj6BHOYBw0hTZCQ7r8RBpMczCxPq2EhMJ49PC_9luG_opjrFwF2BJiCOVkPmyCELcUQqSKct6Oy9H5GH_-t6fLNKbp4Jnz0c-ZxoIfBEV50s3VhP7xUS14d8hpiWVZNYneuj0n7sEsFpN1Qf2KVVbj2GNw4eeWns2A4zVc8qnGh5v6q-Np0xIhxvXs_U1dTya3OFE"/>
+</div>
+<h1 class="font-headline font-black text-[#343c0a] dark:text-[#f3f4ef] tracking-tighter text-3xl">VirtuCycle</h1>
+</div>
+<button aria-label="Notifications" class="w-16 h-16 flex items-center justify-center rounded-full bg-surface-container-high hover:bg-surface-container-highest transition-colors active:scale-95 border-2 border-outline-variant">
+<span class="material-symbols-outlined text-primary" data-icon="notifications">notifications</span>
+<span class="tts-label">System Notifications</span>
+</button>
+</header>
+<main class="pt-28 pb-36 px-6 max-w-4xl mx-auto space-y-10">
+<!-- Large Editorial Headline -->
+<section class="space-y-4">
+<h2 class="font-headline font-extrabold text-5xl text-primary tracking-tight leading-none">
+                Good morning, <br/>Sustainability Hero.
+            </h2>
+<p class="text-xl text-on-surface-variant font-medium max-w-md">Your eco-impact is growing. View your summary below.</p>
+</section>
+<!-- Impact Petal - Specialized Accessibility Card -->
+<section class="relative bg-tertiary-container rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 border-4 border-tertiary shadow-xl">
+<div class="space-y-2 text-center md:text-left">
+<span class="inline-block px-4 py-2 bg-on-tertiary-container text-tertiary font-black rounded-full text-sm uppercase tracking-widest mb-2">Impact Score</span>
+<p class="font-headline text-6xl text-white font-black leading-tight">1,240 <span class="text-3xl font-medium">kg</span></p>
+<p class="text-on-tertiary-container text-xl font-bold">CO2 SAVED THIS MONTH</p>
+</div>
+<div class="w-32 h-32 rounded-full bg-white/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-white !text-6xl" data-icon="energy_savings_leaf" style="font-variation-settings: 'FILL' 1;">energy_savings_leaf</span>
+</div>
+<span class="tts-label">Total impact recorded: one thousand two hundred forty kilograms of carbon dioxide saved this month.</span>
+</section>
+<!-- High Visibility Action Grid -->
+<nav aria-label="Main actions" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Scan Action -->
+<button class="flex flex-col items-start p-8 bg-primary rounded-xl text-left border-4 border-primary transition-all active:scale-90 h-64 group">
+<div class="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center mb-auto group-hover:bg-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-on-primary-container !text-4xl" data-icon="center_focus_strong">center_focus_strong</span>
+</div>
+<h3 class="font-headline text-3xl text-white font-bold mb-2">Scan Material</h3>
+<p class="text-on-primary-container text-lg leading-snug">Identify recyclables instantly using your camera.</p>
+<span class="tts-label">Button: Scan Material. Opens camera to identify recyclables.</span>
+</button>
+<!-- Stats Action -->
+<button class="flex flex-col items-start p-8 bg-surface-container-high rounded-xl text-left border-4 border-primary/20 transition-all active:scale-90 h-64 group">
+<div class="w-16 h-16 bg-surface-container-highest rounded-full flex items-center justify-center mb-auto group-hover:bg-surface-dim transition-colors">
+<span class="material-symbols-outlined text-primary !text-4xl" data-icon="bar_chart_4_bars">bar_chart_4_bars</span>
+</div>
+<h3 class="font-headline text-3xl text-primary font-bold mb-2">My Stats</h3>
+<p class="text-on-surface-variant text-lg leading-snug">Review your weekly history and goal progress.</p>
+<span class="tts-label">Button: My Statistics. View weekly recycling history.</span>
+</button>
+</nav>
+<!-- Accessible List View - No Lines, Tonal Stacking -->
+<section class="space-y-6">
+<h4 class="font-headline text-2xl font-bold text-primary px-2">Upcoming Collection</h4>
+<div class="space-y-4">
+<div class="flex items-center gap-6 p-6 bg-surface-container-low rounded-xl border-2 border-transparent hover:border-outline-variant transition-all">
+<div class="w-20 h-20 rounded-lg bg-surface-container-highest flex flex-col items-center justify-center border-2 border-outline-variant">
+<span class="text-xs font-bold text-on-surface-variant uppercase">OCT</span>
+<span class="text-3xl font-black text-primary">24</span>
+</div>
+<div class="flex-1">
+<p class="text-2xl font-bold text-primary">Paper &amp; Cardboard</p>
+<p class="text-lg text-on-surface-variant">Thursday • Pick up by 8:00 AM</p>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="calendar_month">calendar_month</span>
+</div>
+<div class="flex items-center gap-6 p-6 bg-surface-container rounded-xl border-2 border-transparent hover:border-outline-variant transition-all">
+<div class="w-20 h-20 rounded-lg bg-surface-container-highest flex flex-col items-center justify-center border-2 border-outline-variant">
+<span class="text-xs font-bold text-on-surface-variant uppercase">OCT</span>
+<span class="text-3xl font-black text-primary">27</span>
+</div>
+<div class="flex-1">
+<p class="text-2xl font-bold text-primary">Mixed Plastics</p>
+<p class="text-lg text-on-surface-variant">Sunday • Pick up by 7:30 AM</p>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="calendar_month">calendar_month</span>
+</div>
+</div>
+<span class="tts-label">List of upcoming collections. October 24, Paper and Cardboard. October 27, Mixed Plastics.</span>
+</section>
+<!-- Voice Command Prompt Card -->
+<section class="p-8 bg-surface-container-highest rounded-xl border-2 border-primary/10 flex items-center gap-6">
+<div class="w-20 h-20 rounded-full bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white !text-4xl" data-icon="mic">mic</span>
+</div>
+<div class="flex-1">
+<p class="text-xl font-bold text-primary">"Hey VirtuCycle, where's the nearest drop-off?"</p>
+<p class="text-on-surface-variant">Voice commands are active. Speak now.</p>
+</div>
+<span class="tts-label">Voice activation status: Active. You can say phrases like: where is the nearest drop off?</span>
+</section>
+</main>
+<!-- Bottom Navigation Bar - High Contrast Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-10 pt-4 bg-[#f9faf5]/90 dark:bg-stone-950/90 backdrop-blur-2xl border-t-2 border-outline-variant shadow-[0_-20px_40px_rgba(52,60,10,0.1)]">
+<!-- Dashboard Tab - Active -->
+<button aria-current="page" class="flex flex-col items-center justify-center bg-[#343c0a] text-[#f9faf5] rounded-xl w-20 h-20 shadow-lg scale-110">
+<span class="material-symbols-outlined !text-3xl" data-icon="potted_plant" style="font-variation-settings: 'FILL' 1;">potted_plant</span>
+<span class="font-['Plus_Jakarta_Sans'] font-bold text-[12px] tracking-wide uppercase mt-1">Dash</span>
+<span class="tts-label">Current Page: Dashboard</span>
+</button>
+<!-- Scanner Tab -->
+<button class="flex flex-col items-center justify-center text-[#4B5320]/70 hover:opacity-80 transition-opacity w-20 h-20">
+<span class="material-symbols-outlined !text-4xl" data-icon="center_focus_strong">center_focus_strong</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase mt-1">Scan</span>
+<span class="tts-label">Go to Scanner</span>
+</button>
+<!-- Stats Tab -->
+<button class="flex flex-col items-center justify-center text-[#4B5320]/70 hover:opacity-80 transition-opacity w-20 h-20">
+<span class="material-symbols-outlined !text-4xl" data-icon="bar_chart_4_bars">bar_chart_4_bars</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase mt-1">Stats</span>
+<span class="tts-label">Go to Statistics</span>
+</button>
+<!-- Settings Tab -->
+<button class="flex flex-col items-center justify-center text-[#4B5320]/70 hover:opacity-80 transition-opacity w-20 h-20">
+<span class="material-symbols-outlined !text-4xl" data-icon="settings">settings</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase mt-1">Setup</span>
+<span class="tts-label">Go to Settings</span>
+</button>
+</nav>
+</body></html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VirtuCycle | Accessibility Experience</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "on-surface": "#1a1c19",
+              "tertiary-fixed": "#a3f69c",
+              "background": "#f9faf5",
+              "secondary-fixed-dim": "#c4cb96",
+              "surface-container-highest": "#e2e3de",
+              "on-secondary-container": "#5f663a",
+              "secondary": "#5b6236",
+              "primary-fixed-dim": "#c3cc8c",
+              "primary-fixed": "#dfe8a6",
+              "on-tertiary-fixed": "#002204",
+              "surface-tint": "#5a632e",
+              "on-error-container": "#93000a",
+              "surface-container": "#edeee9",
+              "on-background": "#1a1c19",
+              "on-tertiary-container": "#82d37d",
+              "inverse-primary": "#c3cc8c",
+              "primary-container": "#4b5320",
+              "outline-variant": "#c8c7b8",
+              "surface-container-high": "#e7e9e4",
+              "surface-dim": "#d9dad6",
+              "tertiary": "#00420c",
+              "on-tertiary": "#ffffff",
+              "primary": "#343c0a",
+              "outline": "#77786b",
+              "inverse-surface": "#2e312e",
+              "on-tertiary-fixed-variant": "#005312",
+              "on-primary-fixed-variant": "#434b18",
+              "secondary-container": "#dde5ad",
+              "surface-variant": "#e2e3de",
+              "on-error": "#ffffff",
+              "on-secondary-fixed-variant": "#444a21",
+              "error-container": "#ffdad6",
+              "on-secondary-fixed": "#191e00",
+              "tertiary-container": "#005c15",
+              "surface-bright": "#f9faf5",
+              "on-primary-fixed": "#191e00",
+              "tertiary-fixed-dim": "#88d982",
+              "inverse-on-surface": "#f0f1ec",
+              "on-surface-variant": "#47483c",
+              "on-primary": "#ffffff",
+              "surface": "#f9faf5",
+              "secondary-fixed": "#e0e7b0",
+              "surface-container-low": "#f3f4ef",
+              "error": "#ba1a1a",
+              "on-primary-container": "#bdc787"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+        /* Accessibility Overrides for High Contrast Mode */
+        .high-contrast-mode {
+            --surface-container-low: #f9faf5;
+            --surface-container-highest: #f9faf5;
+            border: 2px solid #77786b;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Shell - Suppressed for Focused Journey (Accessibility Welcome) -->
+<!-- As per instructions: "exclude the navigation shell if the page intent is: Linear/Transactional: Login... or Task-Focused" -->
+<main class="min-h-screen flex flex-col items-center justify-center px-6 py-12 max-w-4xl mx-auto">
+<!-- Brand Identity Section -->
+<header class="flex flex-col items-center mb-12 text-center">
+<div class="mb-8 flex items-center justify-center bg-primary-container text-on-primary-container w-32 h-32 rounded-xl shadow-[0_20px_40px_rgba(52,60,10,0.15)]">
+<span class="material-symbols-outlined !text-7xl" data-icon="accessibility_new">accessibility_new</span>
+</div>
+<div class="space-y-4">
+<span class="text-primary-container font-headline font-extrabold tracking-tighter text-3xl">VirtuCycle</span>
+<h1 class="font-headline font-bold text-4xl md:text-5xl lg:text-6xl text-on-surface leading-tight tracking-tight">
+                    Welcome to the VirtuCycle Accessibility Experience
+                </h1>
+</div>
+</header>
+<!-- Information Card: High Contrast Style -->
+<!-- Primary Actions: Extra Large Target Sizes -->
+<nav class="w-full grid grid-cols-1 gap-6 md:gap-8 max-w-2xl">
+<!-- Action 1: Skip Login -->
+<button class="group flex items-center justify-between bg-primary-container text-on-primary-container rounded-lg p-8 md:p-10 text-left transition-all hover:scale-[1.02] active:scale-95 border-4 border-transparent hover:border-primary">
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined !text-4xl" data-icon="play_circle">play_circle</span>
+<span class="font-headline font-bold text-2xl md:text-3xl">Skip Login &amp; Continue</span>
+</div>
+<span class="material-symbols-outlined !text-4xl hidden md:block" data-icon="chevron_right">chevron_right</span>
+</button>
+<!-- Action 2: Return to Standard -->
+<button class="group flex items-center justify-between bg-surface-container-highest text-primary border-2 border-outline rounded-lg p-8 md:p-10 text-left transition-all hover:bg-surface-container-high active:scale-95">
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined !text-4xl" data-icon="settings_backup_restore">settings_backup_restore</span>
+<span class="font-headline font-bold text-2xl md:text-3xl">Return to Standard Login</span>
+</div>
+<span class="material-symbols-outlined !text-4xl hidden md:block" data-icon="close">close</span>
+</button>
+</nav>
+<!-- Visual Decor: Tonal Stacking Elements -->
+<aside class="mt-16 w-full flex justify-center gap-4 opacity-50 select-none pointer-events-none">
+<div class="w-16 h-16 bg-primary rounded-full"></div>
+<div class="w-16 h-16 bg-primary-container rounded-full"></div>
+<div class="w-16 h-16 bg-secondary-container rounded-full"></div>
+<div class="w-16 h-16 bg-tertiary-container rounded-full"></div>
+</aside>
+</main>
+<!-- Footer Meta: High Legibility -->
+</body></html>

@@ -1,31 +1,40 @@
-import { StyleSheet } from 'react-native';
+import { Colors } from '@/constants/Colors';
+import { FontFamily, TypeScale } from '@/constants/typography';
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
-
-export default function TabTwoScreen() {
+export default function SettingsScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tab Two</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/two.tsx" />
-    </View>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.center}>
+        <Ionicons name="settings-outline" size={48} color={Colors.primary} />
+        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.subtitle}>Coming soon</Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.headlineMd,
+    color: Colors.primary,
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
+  subtitle: {
+    fontFamily: FontFamily.body,
+    fontSize: TypeScale.bodyMd,
+    color: Colors.textMuted,
   },
 });

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VirtuCycle Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-dim": "#d9dad6",
+              "inverse-surface": "#2e312e",
+              "tertiary": "#00420c",
+              "on-tertiary": "#ffffff",
+              "outline": "#77786b",
+              "primary": "#343c0a",
+              "on-tertiary-container": "#82d37d",
+              "inverse-primary": "#c3cc8c",
+              "surface-container": "#edeee9",
+              "on-background": "#1a1c19",
+              "outline-variant": "#c8c7b8",
+              "surface-container-high": "#e7e9e4",
+              "primary-container": "#4b5320",
+              "primary-fixed-dim": "#c3cc8c",
+              "on-tertiary-fixed": "#002204",
+              "primary-fixed": "#dfe8a6",
+              "on-error-container": "#93000a",
+              "surface-tint": "#5a632e",
+              "on-surface": "#1a1c19",
+              "surface-container-lowest": "#ffffff",
+              "background": "#f9faf5",
+              "tertiary-fixed": "#a3f69c",
+              "on-secondary": "#ffffff",
+              "secondary": "#5b6236",
+              "secondary-fixed-dim": "#c4cb96",
+              "on-secondary-container": "#5f663a",
+              "surface-container-highest": "#e2e3de",
+              "surface-container-low": "#f3f4ef",
+              "error": "#ba1a1a",
+              "on-primary-container": "#bdc787",
+              "on-primary-fixed": "#191e00",
+              "surface-bright": "#f9faf5",
+              "tertiary-container": "#005c15",
+              "surface": "#f9faf5",
+              "secondary-fixed": "#e0e7b0",
+              "inverse-on-surface": "#f0f1ec",
+              "tertiary-fixed-dim": "#88d982",
+              "on-primary": "#ffffff",
+              "on-surface-variant": "#47483c",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-secondary-fixed": "#191e00",
+              "on-secondary-fixed-variant": "#444a21",
+              "on-tertiary-fixed-variant": "#005312",
+              "on-primary-fixed-variant": "#434b18",
+              "secondary-container": "#dde5ad",
+              "surface-variant": "#e2e3de"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full flex justify-between items-center px-6 py-4 bg-[#f9faf5]/80 dark:bg-stone-900/80 backdrop-blur-xl z-50">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile photo avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5tbmauNnoCJkOwcm54b6smBU6KiYVfTIwnE_8H_WiuC-XlAFW6k_KBEfT1DNwk5xEYwSP1oBVJNViAggF1QgEToL-PUze9LGOmFj2ruZb2RrEnXOIi9kk4g6zOZhHjxOdPfRRqyaQGZapbL2JQd9_APePXxROnkkHwRhmWc4psJCr8hNtNsPqCSo6pNCzMuJYDtCCCJekcAnjjguQhOFmjZ93CihLUMaU6X29tAN2Pj-q3CLDg1jYhHJLSb7EGFlXMIeKFdkcQi4"/>
+</div>
+<h1 class="font-['Manrope'] font-black text-[#343c0a] dark:text-[#f3f4ef] tracking-tighter text-2xl">VirtuCycle</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-[#e2e3de] dark:hover:bg-stone-700 transition-colors text-[#343c0a] dark:text-[#f3f4ef]">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto space-y-10">
+<!-- Profile Section -->
+<section class="mt-8">
+<div class="flex flex-col items-center mb-10">
+<div class="relative group">
+<div class="w-32 h-32 rounded-xl overflow-hidden bg-surface-container shadow-xl">
+<img class="w-full h-full object-cover" data-alt="Detailed user profile portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsSbZBS9knJDhDpW-n9r8KoDdsfB2lCwEIUs4TZuh3mdxjt1qxufexB4mAYfl5DMTzl5VaELrYlcabhODuzJ2UOoHdz0wI0inbp1hmED2QJrSqNiF_UrwqnmCQ4YljAOcAb42SlD9ZDRZSJwf1-1I11uV1Ul1lnawXF9Qi57jFdB0UP_Gn6inbnMT-BuqdU3T0xZvyrjm1joTHTgilulNYfUIsb_hy4553HI7yWMNyFPRmphj3Tq7YW7v32_INgmG6xAXnBzq2Hvo"/>
+</div>
+<button class="absolute -bottom-2 -right-2 bg-primary text-on-primary p-3 rounded-full shadow-lg hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</div>
+<h2 class="mt-6 text-3xl font-extrabold tracking-tight text-primary">Alex Thorne</h2>
+<p class="text-on-surface-variant font-medium">Eco Enthusiast • Level 42</p>
+</div>
+<!-- Profile Info Bento -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-6 rounded-lg">
+<span class="text-on-surface-variant font-bold text-xs uppercase tracking-widest mb-2 block">Email Address</span>
+<p class="text-on-surface font-semibold">alex.thorne@virtucycle.com</p>
+</div>
+<div class="bg-surface-container-low p-6 rounded-lg">
+<span class="text-on-surface-variant font-bold text-xs uppercase tracking-widest mb-2 block">Eco Points Earned</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary" data-icon="eco" style="font-variation-settings: 'FILL' 1;">eco</span>
+<p class="text-on-surface font-bold text-lg">12,450</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Notification Settings -->
+<section class="space-y-4">
+<h3 class="text-xl font-bold text-primary px-2">Notifications</h3>
+<div class="bg-surface-container-low rounded-lg overflow-hidden">
+<!-- Row 1 -->
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-4">
+<div class="p-2 bg-surface-container-highest rounded-full">
+<span class="material-symbols-outlined text-primary" data-icon="mark_email_unread">mark_email_unread</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Weekly Impact Report</p>
+<p class="text-sm text-on-surface-variant">Stay updated on your recycling progress</p>
+</div>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-dim rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="flex items-center justify-between p-5 hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-4">
+<div class="p-2 bg-surface-container-highest rounded-full">
+<span class="material-symbols-outlined text-primary" data-icon="near_me">near_me</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Community Alerts</p>
+<p class="text-sm text-on-surface-variant">Get notified of local clean-up events</p>
+</div>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-dim rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Accessibility Section -->
+<section class="space-y-4">
+<h3 class="text-xl font-bold text-primary px-2">Accessibility</h3>
+<div class="bg-surface-container-low p-6 rounded-lg space-y-6">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-4">
+<div class="p-3 bg-tertiary-container text-on-tertiary rounded-xl shadow-md">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</div>
+<div>
+<p class="font-bold text-lg text-on-surface">Accessibility Mode</p>
+<p class="text-sm text-on-surface-variant max-w-xs leading-relaxed">Enhance contrast, increase font sizes, and optimize for screen readers.</p>
+</div>
+</div>
+<div class="relative inline-flex items-center cursor-pointer mt-1">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-14 h-8 bg-surface-dim rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-tertiary"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-4 border-t border-outline-variant/20">
+<button class="bg-surface-container-highest py-3 px-4 rounded-full flex items-center justify-center gap-2 hover:bg-outline-variant/40 transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="text_fields">text_fields</span>
+<span class="text-xs font-bold uppercase tracking-wider">Font Size</span>
+</button>
+<button class="bg-surface-container-highest py-3 px-4 rounded-full flex items-center justify-center gap-2 hover:bg-outline-variant/40 transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="contrast">contrast</span>
+<span class="text-xs font-bold uppercase tracking-wider">Contrast</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Account Actions -->
+<section class="pt-4 space-y-3">
+<button class="w-full py-5 bg-primary text-on-primary rounded-lg font-bold flex items-center justify-center gap-3 shadow-lg shadow-primary/20 hover:scale-[0.98] active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="cloud_upload">cloud_upload</span>
+                Sync Data with Cloud
+            </button>
+<button class="w-full py-5 bg-error-container text-on-error-container rounded-lg font-bold flex items-center justify-center gap-3 hover:bg-error-container/80 transition-colors">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Sign Out of VirtuCycle
+            </button>
+</section>
+<footer class="text-center pb-12">
+<p class="text-on-surface-variant text-xs font-bold tracking-[0.2em] uppercase">Version 2.4.1 Organic Bloom</p>
+</footer>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-4 bg-[#f9faf5]/80 dark:bg-stone-950/80 backdrop-blur-2xl rounded-t-[3rem] shadow-[0_-20px_40px_rgba(52,60,10,0.05)] border-t border-[#c8c7b8]/20">
+<a class="flex flex-col items-center justify-center text-[#4B5320]/70 dark:text-stone-400 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="potted_plant">potted_plant</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4B5320]/70 dark:text-stone-400 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="center_focus_strong">center_focus_strong</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase">Scanner</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#4B5320]/70 dark:text-stone-400 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="bar_chart_4_bars">bar_chart_4_bars</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase">Stats</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#343c0a] text-[#f9faf5] rounded-full w-14 h-14 shadow-lg scale-90 duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase hidden">Settings</span>
+</a>
+</nav>
+</body></html>

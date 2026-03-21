@@ -1,57 +1,111 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Colors } from '@/constants/Colors';
+import { FontFamily } from '@/constants/typography';
+import { getDemoSession, getSession, supabase } from '@/services/supabase';
+import {
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+  useFonts as useManropeFonts,
+} from '@expo-google-fonts/manrope';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  useFonts as usePlusJakartaFonts,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import { Slot, router, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { useColorScheme } from '@/components/useColorScheme';
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  const [manropeFontsLoaded] = useManropeFonts({
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
+  const [jakartaFontsLoaded] = usePlusJakartaFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+  const [authResolved, setAuthResolved] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const segments = useSegments();
+  const navigationRef = useRef(false);
 
+  const fontsLoaded = manropeFontsLoaded && jakartaFontsLoaded;
+
+  // Resolve initial auth state
   useEffect(() => {
-    if (loaded) {
+    async function resolveAuth() {
+      const session = await getSession();
+      const demo = await getDemoSession();
+      setIsSignedIn(Boolean(session || demo));
+      setAuthResolved(true);
+    }
+
+    resolveAuth();
+
+    // Subscribe to Supabase auth changes
+    if (!supabase) return;
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsSignedIn(Boolean(session));
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  // Guard navigation once resolved
+  useEffect(() => {
+    if (!authResolved || !fontsLoaded) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!isSignedIn && !inAuthGroup) {
+      router.replace('/(auth)/login');
+    } else if (isSignedIn && inAuthGroup) {
+      router.replace('/(tabs)');
+    }
+  }, [authResolved, isSignedIn, fontsLoaded, segments]);
+
+  // Hide splash once everything is ready
+  useEffect(() => {
+    if (fontsLoaded && authResolved) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [fontsLoaded, authResolved]);
 
-  if (!loaded) {
-    return null;
+  if (!fontsLoaded || !authResolved) {
+    return (
+      <View style={styles.splash}>
+        <Text style={styles.splashLogo}>VirtuCycle</Text>
+      </View>
+    );
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <Slot />
+    </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  splash: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  splashLogo: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: 32,
+    color: Colors.primary,
+    letterSpacing: -1,
+  },
+});
