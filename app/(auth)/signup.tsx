@@ -46,7 +46,7 @@ export default function SignupScreen() {
       if (error) {
         if (error.message.includes("environment variables")) {
           await storeDemoSession(email.trim());
-          router.replace("/(tabs)");
+          router.replace("/(tabs)/dashboard");
         } else {
           Alert.alert("Sign up failed", error.message);
         }
@@ -62,7 +62,7 @@ export default function SignupScreen() {
     } catch (err: any) {
       if (err?.message?.includes("environment variables")) {
         await storeDemoSession(email.trim());
-        router.replace("/(tabs)");
+        router.replace("/(tabs)/dashboard");
       } else {
         Alert.alert("Error", "Something went wrong. Please try again.");
       }
