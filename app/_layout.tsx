@@ -15,7 +15,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { Slot, router, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -36,7 +36,6 @@ export default function RootLayout() {
   const [authResolved, setAuthResolved] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const segments = useSegments();
-  const navigationRef = useRef(false);
 
   const fontsLoaded = manropeFontsLoaded && jakartaFontsLoaded;
 
@@ -69,7 +68,7 @@ export default function RootLayout() {
     if (!isSignedIn && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (isSignedIn && inAuthGroup) {
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/dashboard');
     }
   }, [authResolved, isSignedIn, fontsLoaded, segments]);
 

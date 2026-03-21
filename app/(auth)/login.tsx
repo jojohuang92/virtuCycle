@@ -38,18 +38,18 @@ export default function LoginScreen() {
         // If Supabase isn't configured, fall back to demo mode
         if (error.message.includes("environment variables")) {
           await storeDemoSession(email.trim());
-          router.replace("/(tabs)");
+          router.replace("/(tabs)/dashboard");
         } else {
           Alert.alert("Sign in failed", error.message);
         }
       } else {
-        router.replace("/(tabs)");
+        router.replace("/(tabs)/dashboard");
       }
     } catch (err: any) {
       // Demo mode fallback when Supabase is not configured
       if (err?.message?.includes("environment variables")) {
         await storeDemoSession(email.trim());
-        router.replace("/(tabs)");
+        router.replace("/(tabs)/dashboard");
       } else {
         Alert.alert("Error", "Something went wrong. Please try again.");
       }
