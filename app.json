@@ -31,7 +31,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "VirtuCycle uses the camera to scan recyclable items and announce the correct bin."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
