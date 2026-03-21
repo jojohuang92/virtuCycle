@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-dim": "#d9dad6",
+              "inverse-surface": "#2e312e",
+              "tertiary": "#00420c",
+              "on-tertiary": "#ffffff",
+              "outline": "#77786b",
+              "primary": "#343c0a",
+              "on-tertiary-container": "#82d37d",
+              "inverse-primary": "#c3cc8c",
+              "surface-container": "#edeee9",
+              "on-background": "#1a1c19",
+              "outline-variant": "#c8c7b8",
+              "surface-container-high": "#e7e9e4",
+              "primary-container": "#4b5320",
+              "primary-fixed-dim": "#c3cc8c",
+              "on-tertiary-fixed": "#002204",
+              "primary-fixed": "#dfe8a6",
+              "on-error-container": "#93000a",
+              "surface-tint": "#5a632e",
+              "on-surface": "#1a1c19",
+              "surface-container-lowest": "#ffffff",
+              "background": "#f9faf5",
+              "tertiary-fixed": "#a3f69c",
+              "on-secondary": "#ffffff",
+              "secondary": "#5b6236",
+              "secondary-fixed-dim": "#c4cb96",
+              "on-secondary-container": "#5f663a",
+              "surface-container-highest": "#e2e3de",
+              "surface-container-low": "#f3f4ef",
+              "error": "#ba1a1a",
+              "on-primary-container": "#bdc787",
+              "on-primary-fixed": "#191e00",
+              "surface-bright": "#f9faf5",
+              "tertiary-container": "#005c15",
+              "surface": "#f9faf5",
+              "secondary-fixed": "#e0e7b0",
+              "inverse-on-surface": "#f0f1ec",
+              "tertiary-fixed-dim": "#88d982",
+              "on-primary": "#ffffff",
+              "on-surface-variant": "#47483c",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-secondary-fixed": "#191e00",
+              "on-secondary-fixed-variant": "#444a21",
+              "on-tertiary-fixed-variant": "#005312",
+              "on-primary-fixed-variant": "#434b18",
+              "secondary-container": "#dde5ad",
+              "surface-variant": "#e2e3de"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background font-body text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full flex justify-between items-center px-6 py-4 bg-[#f9faf5]/80 dark:bg-stone-900/80 backdrop-blur-xl z-50">
+<div class="flex items-center gap-3 flex-1">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+<img alt="User" data-alt="User profile avatar close up photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYJMs_5vRmkS9fw5-g2GFvFg6t7bNOFEfZSKu3ubIxM2uiBME340A95kHC8WVcU0pXBnQk_K9Q02ym5qXWbtIRq_EBH3tqymJxw6xDw7LDUcNgH18WKRu0fMt3XKj5-EPg-Sw41pijENpQ9y77IpE7JDPOpEakI8Kv6jnNddZt_1M7XKgQ-H9XnPORtMSU0E2NgSfz2eoIasU6lTwNrkK0RTRz4TGPyaRbgJUEUZAvTqBQ8_Di9G-1GYKsJnJfvmORUo0j9yqVf3I"/>
+</div>
+<h1 class="font-headline font-black text-[#343c0a] dark:text-[#f3f4ef] tracking-tighter text-2xl">VirtuCycle</h1>
+</div>
+<button aria-label="Switch to Accessibility Mode" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#e2e3de] transition-colors mr-1" onclick="window.location.href='#';" title="Accessibility Mode">
+<span class="material-symbols-outlined text-primary">accessibility_new</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#e2e3de] transition-colors">
+<span class="material-symbols-outlined text-primary">notifications</span>
+</button>
+</header>
+<main class="pt-24 px-6 max-w-5xl mx-auto">
+<!-- Dashboard Welcome -->
+<div class="mb-8">
+<h2 class="font-headline font-extrabold text-3xl text-primary tracking-tight">Welcome back!</h2>
+<p class="text-on-surface-variant">Ready to make an impact today?</p>
+</div>
+<!-- Primary Action: Scanner -->
+<div class="mb-8">
+<button class="w-full py-8 rounded-2xl bg-gradient-to-br from-primary to-primary-container text-on-primary flex flex-col items-center justify-center gap-3 shadow-xl active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-5xl">center_focus_strong</span>
+<span class="font-headline font-bold text-2xl">Start New Scan</span>
+</button>
+</div>
+<!-- Bento Grid Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+<!-- Impact Petal: Carbon Reduced -->
+<div class="md:col-span-2 bg-tertiary-container text-on-tertiary rounded-2xl p-8 flex flex-col justify-center items-center text-center">
+<span class="material-symbols-outlined text-5xl mb-4" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="text-5xl font-headline font-black">12.4</span>
+<span class="font-label text-sm uppercase font-bold tracking-widest mt-1 opacity-80">kg CO₂ Saved</span>
+<div class="mt-6 text-xs bg-black/10 px-4 py-2 rounded-full font-bold">Top 5% this month</div>
+</div>
+<!-- Items Scanned -->
+<div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20 flex flex-col justify-between min-h-[140px]">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl">barcode_scanner</span>
+<span class="text-tertiary font-bold text-sm bg-tertiary-container/30 px-2 py-0.5 rounded-full">+12%</span>
+</div>
+<div>
+<div class="text-4xl font-headline font-extrabold text-primary">342</div>
+<div class="text-sm font-semibold text-on-surface-variant">Items Scanned</div>
+</div>
+</div>
+<!-- Points/Wallet -->
+<div class="bg-secondary-container text-on-secondary-container rounded-2xl p-6 flex flex-col justify-between min-h-[140px]">
+<div class="w-12 h-12 rounded-full bg-on-secondary-container/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">payments</span>
+</div>
+<div>
+<div class="text-4xl font-headline font-bold">2,450</div>
+<div class="text-sm font-semibold uppercase tracking-tight opacity-70">Eco Credits</div>
+</div>
+</div>
+<!-- Quick Tip -->
+<div class="md:col-span-2 bg-surface-container-highest rounded-2xl p-6 flex items-center gap-4">
+<span class="material-symbols-outlined text-primary flex-shrink-0">lightbulb</span>
+<p class="text-sm font-medium text-primary leading-relaxed italic">"Clean plastic containers before scanning to ensure they can be recycled effectively."</p>
+</div>
+</div>
+<!-- Recent History Section -->
+<section class="mb-8">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline font-bold text-2xl text-primary">Recent Archive</h3>
+<button class="text-primary font-bold text-sm hover:underline">View All</button>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-4 p-4 bg-surface-container-low border border-outline-variant/10 rounded-2xl hover:bg-surface-container transition-colors group">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">water_bottle</span>
+</div>
+<div class="flex-1">
+<div class="font-bold text-primary">PET Water Bottle</div>
+<div class="text-xs text-on-surface-variant">Scanned 2 hours ago • +5 Points</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+<div class="flex items-center gap-4 p-4 bg-surface-container-low border border-outline-variant/10 rounded-2xl hover:bg-surface-container transition-colors group">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">newspaper</span>
+</div>
+<div class="flex-1">
+<div class="font-bold text-primary">Cardboard Box</div>
+<div class="text-xs text-on-surface-variant">Scanned yesterday • +12 Points</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-4 bg-[#f9faf5]/80 dark:bg-stone-950/80 backdrop-blur-2xl border-t border-[#c8c7b8]/20 shadow-[0_-20px_40px_rgba(52,60,10,0.05)] rounded-t-[3rem]">
+<!-- Dashboard (Active) -->
+<a class="flex flex-col items-center justify-center bg-[#343c0a] text-[#f9faf5] rounded-full w-14 h-14 shadow-lg active:scale-90 duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">potted_plant</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[0px] tracking-wide uppercase">Dashboard</span>
+</a>
+<!-- Scanner -->
+<a class="flex flex-col items-center justify-center text-[#4B5320]/70 dark:text-stone-400 hover:opacity-80 transition-opacity active:scale-90 duration-300 ease-out" href="#">
+<span class="material-symbols-outlined">center_focus_strong</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase mt-1">Scanner</span>
+</a>
+<!-- Stats -->
+<a class="flex flex-col items-center justify-center text-[#4B5320]/70 dark:text-stone-400 hover:opacity-80 transition-opacity active:scale-90 duration-300 ease-out" href="#">
+<span class="material-symbols-outlined">bar_chart_4_bars</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase mt-1">Stats</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-[#4B5320]/70 dark:text-stone-400 hover:opacity-80 transition-opacity active:scale-90 duration-300 ease-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Plus_Jakarta_Sans'] font-semibold text-[11px] tracking-wide uppercase mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

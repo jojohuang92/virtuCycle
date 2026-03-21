@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#5a632e",
+                        "secondary-fixed-dim": "#c4cb96",
+                        "surface": "#f9faf5",
+                        "on-error-container": "#93000a",
+                        "outline": "#77786b",
+                        "on-primary-fixed": "#191e00",
+                        "tertiary-fixed-dim": "#88d982",
+                        "primary-fixed": "#dfe8a6",
+                        "primary": "#343c0a",
+                        "on-surface-variant": "#47483c",
+                        "surface-container": "#edeee9",
+                        "secondary": "#5b6236",
+                        "surface-bright": "#f9faf5",
+                        "on-tertiary-container": "#82d37d",
+                        "inverse-surface": "#2e312e",
+                        "on-primary-fixed-variant": "#434b18",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#a3f69c",
+                        "surface-container-high": "#e7e9e4",
+                        "on-secondary-container": "#5f663a",
+                        "surface-container-highest": "#e2e3de",
+                        "tertiary": "#00420c",
+                        "on-tertiary-fixed-variant": "#005312",
+                        "background": "#f9faf5",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#005c15",
+                        "on-primary-container": "#bdc787",
+                        "inverse-on-surface": "#f0f1ec",
+                        "primary-fixed-dim": "#c3cc8c",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#4b5320",
+                        "secondary-fixed": "#e0e7b0",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e2e3de",
+                        "surface-dim": "#d9dad6",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#f3f4ef",
+                        "on-secondary-fixed": "#191e00",
+                        "inverse-primary": "#c3cc8c",
+                        "on-surface": "#1a1c19",
+                        "on-background": "#1a1c19",
+                        "on-tertiary-fixed": "#002204",
+                        "secondary-container": "#dde5ad",
+                        "on-secondary-fixed-variant": "#444a21",
+                        "outline-variant": "#c8c7b8"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-shadow {
+            box-shadow: 0 20px 40px rgba(52, 60, 10, 0.08);
+        }
+        .glass-nav {
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="bg-[#f9faf5] dark:bg-stone-950 flex justify-between items-center px-6 h-16 w-full docked full-width top-0 z-40">
+<div class="flex items-center gap-4">
+<button class="text-[#4B5320] dark:text-lime-200 active:scale-95 duration-200 transition-colors hover:bg-[#e2e3de] p-2 rounded-full" style="">
+<span class="material-symbols-outlined" data-icon="arrow_back" style="">arrow_back</span>
+</button>
+<h1 class="font-['Manrope'] font-bold text-2xl tracking-tight text-[#4B5320] dark:text-lime-200" style="">Profile</h1>
+</div>
+<button class="text-[#4B5320] dark:text-lime-200 active:scale-95 duration-200 transition-colors hover:bg-[#e2e3de] p-2 rounded-full" style="">
+<span class="material-symbols-outlined" data-icon="settings" style="">settings</span>
+</button>
+</header>
+<main class="pb-32">
+<!-- Hero Profile Section: Editorial Layout -->
+<section class="px-6 pt-8 pb-12 flex flex-col md:flex-row md:items-end gap-8 overflow-hidden">
+<div class="relative group">
+<div class="w-40 h-40 rounded-xl overflow-hidden editorial-shadow bg-surface-container-highest">
+<img alt="Alex Thorne Profile Photo" class="w-full h-full object-cover" data-alt="Close up portrait of Alex Thorne smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9BF2aQ3piCcmuvIWhKHdBYmQFEPErVdd_QX4HxNEab9tyP2LpLC3Sx9aI7Jhb1W1tJopb6dM56Zk_R3qCU9fWQFtfMZ7kNC0zSuTtc3hMnonnCi3Ws1ni6zZnDb-NflyEbj4il9AwRvUr44gUv0LQJfpOlY8vLRNy8WfD-2FB8sPU33-v6ICgV2bc_ZMj2Bzadu2lq8yrXfDy0dn_Lr2op92pI313nFnP-ybOuPHApLWuoJZo7en5ysZ8-4QSInNVofxD5LvwF_c" style=""/>
+</div>
+<div class="absolute -bottom-4 -right-4 bg-tertiary-container text-white px-4 py-2 rounded-full font-headline font-bold text-sm editorial-shadow flex items-center gap-2" style="">
+<span class="material-symbols-outlined text-[18px]" style='font-variation-settings: "FILL" 1;'>eco</span>
+                    Level 42
+                </div>
+</div>
+<div class="flex-1 space-y-1">
+<h2 class="font-headline font-extrabold text-5xl md:text-7xl text-primary leading-[0.9] tracking-tighter" style="">Alex<br/>Thorne</h2>
+<div class="pt-4 flex items-center gap-3">
+<span class="inline-block w-2 h-2 rounded-full bg-tertiary"></span>
+<p class="font-body font-medium text-on-surface-variant" style=""><div>Member since 2023<br/></div></p>
+</div>
+</div>
+</section>
+<!-- Bento Impact Summary -->
+<section class="px-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Main Impact Card -->
+<div class="bg-surface-container-highest p-8 rounded-xl flex flex-col justify-between min-h-[220px]">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="auto_awesome" style="">auto_awesome</span>
+<button class="bg-primary text-on-primary px-6 py-2 rounded-full font-headline font-bold text-sm active:scale-95 transition-all" style="">
+                        View Full Report
+                    </button>
+</div>
+<div class="space-y-1">
+<h3 class="font-headline font-bold text-3xl text-primary" style="">342 Items Recycled</h3>
+<p class="text-on-surface-variant font-body" style="">You've diverted 12.4kg of waste this month.</p>
+</div>
+</div>
+<!-- Credits Card -->
+</section>
+<!-- Navigation Links: Editorial List -->
+<section class="mt-12 px-6">
+<h4 class="font-headline font-bold text-xl mb-6 text-primary" style="">Curator Dashboard</h4>
+<div class="space-y-4">
+<!-- Impact Reports Link -->
+<a class="group flex items-center justify-between p-6 bg-surface-container-low rounded-lg hover:bg-surface-container transition-colors" href="#" style="">
+<div class="flex items-center gap-6">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="analytics" style="">analytics</span>
+</div>
+<div>
+<p class="font-headline font-bold text-lg" style="">Impact Reports</p>
+<p class="text-sm text-on-surface-variant" style="">Detailed breakdown of your footprint</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline transition-transform group-hover:translate-x-1" data-icon="chevron_right" style="">chevron_right</span>
+</a>
+<!-- Community Link -->
+<!-- Settings Link -->
+<a class="group flex items-center justify-between p-6 bg-surface-container-low rounded-lg hover:bg-surface-container transition-colors" href="{{DATA:SCREEN:SCREEN_14}}" style="">
+<div class="flex items-center gap-6">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="settings" style="">settings</span>
+</div>
+<div>
+<p class="font-headline font-bold text-lg" style="">Account Settings</p>
+<p class="text-sm text-on-surface-variant" style="">Privacy, notifications, and security</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline transition-transform group-hover:translate-x-1" data-icon="chevron_right" style="">chevron_right</span>
+</a>
+<!-- Help & Support -->
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#f9faf5]/80 dark:bg-stone-950/80 backdrop-blur-xl border-t border-[#c8c7b8]/20 shadow-[0_-20px_40px_rgba(52,60,10,0.08)]">
+<div class="flex flex-col items-center justify-center text-[#77786b] dark:text-stone-500 hover:opacity-80 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined" data-icon="inventory_2" style="">inventory_2</span>
+<span class="font-['Plus_Jakarta_Sans'] font-medium text-[11px]" style="">Archive</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#77786b] dark:text-stone-500 hover:opacity-80 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined" data-icon="eco" style="">eco</span>
+<span class="font-['Plus_Jakarta_Sans'] font-medium text-[11px]" style="">Impact</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#77786b] dark:text-stone-500 hover:opacity-80 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined" data-icon="center_focus_strong" style="">center_focus_strong</span>
+<span class="font-['Plus_Jakarta_Sans'] font-medium text-[11px]" style="">Scan</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#e2e3de] dark:bg-stone-800 text-[#343c0a] dark:text-lime-100 rounded-full px-5 py-1 transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="person" style='font-variation-settings: "FILL" 1;'>person</span>
+<span class="font-['Plus_Jakarta_Sans'] font-medium text-[11px]" style="">Profile</span>
+</div>
+</nav>
+</body></html>
