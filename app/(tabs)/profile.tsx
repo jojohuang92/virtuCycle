@@ -251,14 +251,14 @@ const styles = StyleSheet.create({
   },
   firstName: {
     fontFamily: FontFamily.displayBold,
-    fontSize: 56,
+    fontSize: 45,
     color: Colors.primary,
     lineHeight: 56,
     letterSpacing: -2,
   },
   lastName: {
     fontFamily: FontFamily.displayBold,
-    fontSize: 56,
+    fontSize: 45,
     color: Colors.primary,
     lineHeight: 56,
     letterSpacing: -2,

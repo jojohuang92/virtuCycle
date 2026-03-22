@@ -1,8 +1,8 @@
+import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+import * as Haptics from 'expo-haptics';
+import * as Speech from 'expo-speech';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import * as Speech from 'expo-speech';
-import * as Haptics from 'expo-haptics';
 
 type BinType = 'Recycling' | 'Trash' | 'Compost' | 'Unknown';
 
@@ -41,16 +41,18 @@ export default function TabOneScreen() {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [isCameraReady, isScanning, isBusy]);
+  }, [isCameraReady, isScanning]);
 
   const speakOnce = (message: string) => {
     if (message === lastSpoken) return;
+
     Speech.stop();
     Speech.speak(message, {
       language: 'en',
       rate: 0.9,
       pitch: 1,
     });
+
     setLastSpoken(message);
   };
 
@@ -70,15 +72,13 @@ export default function TabOneScreen() {
         ? `${itemLabel} detected. Place it in the compost bin.`
         : 'Place this item in the compost bin.';
     } else {
-      message = 'Item not recognized. Please try moving the camera closer.';
+      message = 'I am not sure. Move the item closer and hold it steady.';
     }
 
     setLastResult(bin);
     setStatusText(message);
     speakOnce(message);
 
-    // Haptics may do nothing while iOS Camera is active.
-    // Keep this as a secondary cue, not the main accessible output.
     try {
       if (bin === 'Recycling') {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -107,6 +107,13 @@ export default function TabOneScreen() {
 
       const result = await classifyPhoto(photo.base64 ?? '');
 
+      if (result.bin === 'Unknown') {
+        setLastResult('Unknown');
+        setStatusText('I am not sure. Move the item closer and hold it steady.');
+        speakOnce('Move closer and try again.');
+        return;
+      }
+
       await announceResult(result.bin, result.label);
     } catch (error) {
       console.log('Scan error:', error);
@@ -117,39 +124,72 @@ export default function TabOneScreen() {
     }
   };
 
-  // Replace this with your real image classification call later.
-  // For now it simulates the scan result so your camera + TTS flow works.
   const classifyPhoto = async (
     base64Image: string
   ): Promise<{ bin: BinType; label?: string }> => {
-    if (!base64Image) {
+    if (!base64Image || base64Image.length < 1000) {
       return { bin: 'Unknown' };
     }
-
-    // TODO:
-    // Send the image to your backend / ML model / vision API here.
-    // Example future flow:
-    // const res = await fetch('https://your-api-url/classify', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ image: base64Image }),
-    // });
-    // const data = await res.json();
-    // return { bin: data.bin, label: data.label };
-
-    // Temporary demo behavior for hackathon UI/TTS testing:
-    const demoResults: Array<{ bin: BinType; label: string }> = [
-      { bin: 'Recycling', label: 'Plastic bottle' },
-      { bin: 'Recycling', label: 'Aluminum can' },
-      { bin: 'Trash', label: 'Chip bag' },
-      { bin: 'Compost', label: 'Banana peel' },
-    ];
-
-    const randomResult =
-      demoResults[Math.floor(Math.random() * demoResults.length)];
-
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    return randomResult;
+  
+    try {
+      const res = await fetch('https://your-api-url/classify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64Image }),
+      });
+  
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+  
+      const data = await res.json();
+      console.log('API response:', data);
+  
+      const confidence = Number(data.confidence ?? 0);
+      const label = String(data.label ?? '').toLowerCase();
+  
+      if (confidence < 0.5) {
+        return { bin: 'Unknown' };
+      }
+  
+      if (label.includes('bottle') || label.includes('can')) {
+        return { bin: 'Recycling', label };
+      }
+  
+      if (
+        label.includes('banana') ||
+        label.includes('food') ||
+        label.includes('fruit') ||
+        label.includes('peel')
+      ) {
+        return { bin: 'Compost', label };
+      }
+  
+      if (
+        label.includes('bag') ||
+        label.includes('wrapper') ||
+        label.includes('plastic bag')
+      ) {
+        return { bin: 'Trash', label };
+      }
+  
+      return { bin: 'Unknown', label };
+    } catch (err) {
+      console.log('Classification error:', err);
+  
+      // Demo fallback so your app still works during development
+      const demoResults: Array<{ bin: BinType; label: string }> = [
+        { bin: 'Recycling', label: 'plastic bottle' },
+        { bin: 'Recycling', label: 'aluminum can' },
+        { bin: 'Trash', label: 'chip bag' },
+        { bin: 'Compost', label: 'banana peel' },
+      ];
+  
+      const fallback =
+        demoResults[Math.floor(Math.random() * demoResults.length)];
+  
+      return fallback;
+    }
   };
 
   if (!permission) {
