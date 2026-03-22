@@ -1,12 +1,15 @@
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 type BinType = 'Recycling' | 'Trash' | 'Compost' | 'Unknown';
 
 export default function TabOneScreen() {
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const cameraRef = useRef<CameraView | null>(null);
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -250,81 +253,87 @@ export default function TabOneScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  camera: {
-    flex: 1,
-  },
-  overlay: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 40,
-    padding: 16,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.68)',
-  },
-  appTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  status: {
-    fontSize: 16,
-    color: '#ffffff',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  result: {
-    fontSize: 15,
-    color: '#d1fae5',
-    marginBottom: 14,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  toggleButton: {
-    backgroundColor: '#22c55e',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  toggleButtonText: {
-    color: '#ffffff',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  helperText: {
-    textAlign: 'center',
-    fontSize: 16,
-    lineHeight: 22,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  permissionButton: {
-    backgroundColor: '#22c55e',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 14,
-  },
-  permissionButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-});
+function createStyles(colors: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    camera: {
+      flex: 1,
+    },
+    overlay: {
+      position: 'absolute',
+      left: 16,
+      right: 16,
+      bottom: 40,
+      padding: 16,
+      borderRadius: 20,
+      backgroundColor: colors.overlay,
+    },
+    appTitle: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: colors.onPrimary,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    status: {
+      fontSize: 16,
+      color: colors.onPrimary,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    result: {
+      fontSize: 15,
+      color: colors.primaryFixed,
+      marginBottom: 14,
+      textAlign: 'center',
+      fontWeight: '600',
+    },
+    toggleButton: {
+      backgroundColor: colors.tertiary,
+      borderRadius: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+    },
+    toggleButtonText: {
+      color: colors.onPrimary,
+      textAlign: 'center',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    centered: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+      backgroundColor: colors.background,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      marginBottom: 10,
+      color: colors.primary,
+    },
+    helperText: {
+      textAlign: 'center',
+      fontSize: 16,
+      lineHeight: 22,
+      marginTop: 10,
+      marginBottom: 20,
+      color: colors.text,
+    },
+    permissionButton: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      borderRadius: 14,
+    },
+    permissionButtonText: {
+      color: colors.onPrimary,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+  });
+}

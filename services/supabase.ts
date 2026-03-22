@@ -1,4 +1,4 @@
-import type { ScanResult, UserProfile } from "@/types";
+import type { AccessibilityMode, ScanResult, UserProfile } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient, type Session, type User } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
@@ -28,6 +28,19 @@ export const supabase =
 
 export function isSupabaseConfigured() {
   return Boolean(supabase);
+}
+
+function normalizeAccessibilityMode(value: unknown): AccessibilityMode {
+  if (
+    value === "default" ||
+    value === "protanopia" ||
+    value === "deuteranopia" ||
+    value === "tritanopia"
+  ) {
+    return value;
+  }
+
+  return "default";
 }
 
 export async function signInWithEmail(email: string, password: string) {
@@ -82,6 +95,7 @@ export async function storeDemoSession(email: string) {
     id: "demo-user",
     email,
     displayName: email.split("@")[0],
+    accessibilityMode: "default",
     ecoPoints: 12450,
     level: 42,
     co2SavedKg: 1240,
@@ -94,7 +108,23 @@ export async function storeDemoSession(email: string) {
 
 export async function getDemoSession(): Promise<UserProfile | null> {
   const raw = await AsyncStorage.getItem("virtucycle_demo_user");
-  return raw ? (JSON.parse(raw) as UserProfile) : null;
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = JSON.parse(raw) as Partial<UserProfile>;
+
+  return {
+    id: parsed.id ?? "demo-user",
+    email: parsed.email ?? "",
+    displayName: parsed.displayName ?? "VirtuCycle Member",
+    accessibilityMode: normalizeAccessibilityMode(parsed.accessibilityMode),
+    ecoPoints: parsed.ecoPoints ?? 12450,
+    level: parsed.level ?? 42,
+    co2SavedKg: parsed.co2SavedKg ?? 1240,
+    scansThisMonth: parsed.scansThisMonth ?? 28,
+    joinedAt: parsed.joinedAt ?? Date.now(),
+  };
 }
 
 export async function getProfile(
@@ -116,6 +146,9 @@ export async function getProfile(
       email: user.email || "",
       displayName:
         (user.user_metadata?.display_name as string) || "VirtuCycle Member",
+      accessibilityMode: normalizeAccessibilityMode(
+        user.user_metadata?.color_mode,
+      ),
       ecoPoints: 12450,
       level: 42,
       co2SavedKg: 1240,
@@ -127,13 +160,91 @@ export async function getProfile(
   return {
     id: data.id,
     email: data.email,
-    displayName: data.full_name,
+    displayName:
+      (user.user_metadata?.display_name as string) ||
+      data.full_name ||
+      "VirtuCycle Member",
+    accessibilityMode: normalizeAccessibilityMode(
+      user.user_metadata?.color_mode ?? data.color_mode,
+    ),
     ecoPoints: data.eco_points ?? 0,
     level: data.level ?? 1,
     co2SavedKg: data.co2_saved_kg ?? 0,
     scansThisMonth: data.scans_this_month ?? 0,
     joinedAt: new Date(data.created_at).getTime(),
   };
+}
+
+export async function updateProfileSettings(
+  user: User | null | undefined,
+  updates: {
+    displayName?: string;
+    accessibilityMode?: AccessibilityMode;
+  },
+): Promise<User | null> {
+  if (!supabase || !user) {
+    const demoProfile = await getDemoSession();
+
+    if (!demoProfile) {
+      return null;
+    }
+
+    const nextProfile: UserProfile = {
+      ...demoProfile,
+      displayName: updates.displayName ?? demoProfile.displayName,
+      accessibilityMode:
+        updates.accessibilityMode ?? demoProfile.accessibilityMode,
+    };
+
+    await AsyncStorage.setItem(
+      "virtucycle_demo_user",
+      JSON.stringify(nextProfile),
+    );
+    return null;
+  }
+
+  const metadataUpdates: Record<string, string> = {};
+
+  if (updates.displayName) {
+    metadataUpdates.display_name = updates.displayName;
+    metadataUpdates.full_name = updates.displayName;
+  }
+
+  if (updates.accessibilityMode) {
+    metadataUpdates.color_mode = updates.accessibilityMode;
+  }
+
+  if (Object.keys(metadataUpdates).length > 0) {
+    const { data, error } = await supabase.auth.updateUser({
+      data: metadataUpdates,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (updates.displayName) {
+      supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: user.id,
+            email: user.email ?? "",
+            full_name: updates.displayName,
+          },
+          { onConflict: "id" },
+        )
+        .then(({ error: profileError }) => {
+          if (profileError) {
+            console.warn("Profile table update failed:", profileError.message);
+          }
+        });
+    }
+
+    return data.user ?? user;
+  }
+
+  return user;
 }
 
 export async function saveScanResult(result: ScanResult, userId?: string) {

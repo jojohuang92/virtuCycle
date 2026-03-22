@@ -1,9 +1,11 @@
-import { Colors, Radii, Spacing } from "@/constants/Colors";
+import { AccessibilityColors, Radii, Spacing } from "@/constants/Colors";
 import { FontFamily, TypeScale } from "@/constants/typography";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSession } from "@/hooks/useSession";
+import type { AccessibilityMode } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -18,78 +20,53 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const ACCESSIBILITY_MODES = {
   default: {
     label: "Default",
-    primary: Colors.primary,
-    primaryContainer: Colors.primaryContainer,
-    tertiary: Colors.tertiary,
-    tertiaryContainer: Colors.tertiaryContainer,
-    background: Colors.background,
-    surfaceContainerHighest: Colors.surfaceContainerHighest,
-    surfaceContainerHigh: Colors.surfaceContainerHigh,
-    surfaceContainerLow: Colors.surfaceContainerLow,
-    outline: Colors.outline,
-    text: Colors.text,
-    textMuted: Colors.textMuted,
-    onPrimary: Colors.onPrimary,
+    ...AccessibilityColors.default,
   },
   protanopia: {
     label: "Protanopia",
-    primary: "#2F6FED",
-    primaryContainer: "#2A4D80",
-    tertiary: "#6C8F76",
-    tertiaryContainer: "#7EA488",
-    background: Colors.background,
-    surfaceContainerHighest: "#EAF0F7",
-    surfaceContainerHigh: "#DFE8F2",
-    surfaceContainerLow: "#F6F9FC",
-    outline: "#9AA8B8",
-    text: "#1C2430",
-    textMuted: "#627080",
-    onPrimary: "#FFFFFF",
+    ...AccessibilityColors.protanopia,
   },
   deuteranopia: {
     label: "Deuteranopia",
-    primary: "#3A66CC",
-    primaryContainer: "#304E8C",
-    tertiary: "#B38457",
-    tertiaryContainer: "#C79869",
-    background: Colors.background,
-    surfaceContainerHighest: "#ECECF4",
-    surfaceContainerHigh: "#E2E4EE",
-    surfaceContainerLow: "#F8F9FC",
-    outline: "#A5ADC0",
-    text: "#202532",
-    textMuted: "#687081",
-    onPrimary: "#FFFFFF",
+    ...AccessibilityColors.deuteranopia,
   },
   tritanopia: {
     label: "Tritanopia",
-    primary: "#C96D35",
-    primaryContainer: "#8A4D27",
-    tertiary: "#5D8F66",
-    tertiaryContainer: "#71A47A",
-    background: Colors.background,
-    surfaceContainerHighest: "#F7EEE8",
-    surfaceContainerHigh: "#F1E5DD",
-    surfaceContainerLow: "#FCF8F5",
-    outline: "#BFA89A",
-    text: "#2B221D",
-    textMuted: "#78685E",
-    onPrimary: "#FFFFFF",
+    ...AccessibilityColors.tritanopia,
   },
 };
 
+type AccessibilityTheme =
+  (typeof ACCESSIBILITY_MODES)[keyof typeof ACCESSIBILITY_MODES];
+type SettingsTheme = Omit<AccessibilityTheme, "label">;
+
 export default function SettingsScreen() {
-  const { profile } = useSession();
+  const colors = useAppTheme();
+  const { profile, saveProfile } = useSession();
 
   const [username, setUsername] = useState(profile?.displayName ?? "");
   const [savedUsername, setSavedUsername] = useState(profile?.displayName ?? "");
   const [colorMode, setColorMode] =
-    useState<keyof typeof ACCESSIBILITY_MODES>("default");
+    useState<AccessibilityMode>(
+      profile?.accessibilityMode ?? "default",
+    );
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [isSavingAccessibility, setIsSavingAccessibility] = useState(false);
+
+  useEffect(() => {
+    setUsername(profile?.displayName ?? "");
+    setSavedUsername(profile?.displayName ?? "");
+    setColorMode(profile?.accessibilityMode ?? "default");
+  }, [profile?.displayName, profile?.accessibilityMode]);
 
   const theme = ACCESSIBILITY_MODES[colorMode];
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const pageTheme: SettingsTheme =
+    colorMode === (profile?.accessibilityMode ?? "default")
+    ? colors
+    : theme;
+  const styles = useMemo(() => createStyles(pageTheme), [pageTheme]);
 
-  function handleSaveName() {
+  async function handleSaveName() {
     const trimmedName = username.trim();
 
     if (!trimmedName) {
@@ -97,15 +74,37 @@ export default function SettingsScreen() {
       return;
     }
 
-    setSavedUsername(trimmedName);
-    Alert.alert("Saved", `Your username has been updated to "${trimmedName}".`);
+    try {
+      setIsSavingName(true);
+      await saveProfile({ displayName: trimmedName });
+      setSavedUsername(trimmedName);
+      Alert.alert(
+        "Saved",
+        `Your username has been updated to "${trimmedName}".`,
+      );
+    } catch (error) {
+      Alert.alert("Unable to save", "We couldn't update your username.");
+    } finally {
+      setIsSavingName(false);
+    }
   }
 
-  function handleSaveAccessibility() {
-    Alert.alert(
-      "Accessibility updated",
-      `Color mode set to ${ACCESSIBILITY_MODES[colorMode].label}.`
-    );
+  async function handleSaveAccessibility() {
+    try {
+      setIsSavingAccessibility(true);
+      await saveProfile({ accessibilityMode: colorMode });
+      Alert.alert(
+        "Accessibility updated",
+        `Color mode set to ${ACCESSIBILITY_MODES[colorMode].label}.`,
+      );
+    } catch (error) {
+      Alert.alert(
+        "Unable to save",
+        "We couldn't update your accessibility settings.",
+      );
+    } finally {
+      setIsSavingAccessibility(false);
+    }
   }
 
   return (
@@ -147,8 +146,14 @@ export default function SettingsScreen() {
             style={styles.input}
           />
 
-          <TouchableOpacity style={styles.primaryButton} onPress={handleSaveName}>
-            <Text style={styles.primaryButtonText}>Save Username</Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleSaveName}
+            disabled={isSavingName}
+          >
+            <Text style={styles.primaryButtonText}>
+              {isSavingName ? "Saving..." : "Save Username"}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -209,8 +214,11 @@ export default function SettingsScreen() {
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={handleSaveAccessibility}
+            disabled={isSavingAccessibility}
           >
-            <Text style={styles.primaryButtonText}>Save Accessibility</Text>
+            <Text style={styles.primaryButtonText}>
+              {isSavingAccessibility ? "Saving..." : "Save Accessibility"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -218,7 +226,7 @@ export default function SettingsScreen() {
   );
 }
 
-function createStyles(theme: (typeof ACCESSIBILITY_MODES)["default"]) {
+function createStyles(theme: SettingsTheme) {
   return StyleSheet.create({
     safe: {
       flex: 1,

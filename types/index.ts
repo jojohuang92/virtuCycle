@@ -1,5 +1,11 @@
 import type { BinType } from "@/constants/bins";
 
+export type AccessibilityMode =
+  | "default"
+  | "protanopia"
+  | "deuteranopia"
+  | "tritanopia";
+
 export interface RecyclingRules {
   city: string;
   state: string;
@@ -25,6 +31,7 @@ export interface UserProfile {
   id: string;
   email: string;
   displayName: string;
+  accessibilityMode: AccessibilityMode;
   ecoPoints: number;
   level: number;
   co2SavedKg: number;

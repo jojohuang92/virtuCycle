@@ -1,9 +1,11 @@
-import { Colors, Radii, Spacing } from "@/constants/Colors";
+import { Radii, Spacing } from "@/constants/Colors";
 import { FontFamily, TypeScale } from "@/constants/typography";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSession } from "@/hooks/useSession";
 import { signOut } from "@/services/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useMemo } from "react";
 import {
   Alert,
   ScrollView,
@@ -32,6 +34,8 @@ const CURATOR_LINKS = [
 ];
 
 export default function ProfileScreen() {
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { profile, loading } = useSession();
 
   async function handleSignOut() {
@@ -71,7 +75,7 @@ export default function ProfileScreen() {
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
         <TouchableOpacity style={styles.iconBtn} onPress={handleSignOut}>
-          <Ionicons name="log-out-outline" size={22} color={Colors.primary} />
+          <Ionicons name="log-out-outline" size={22} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -83,7 +87,7 @@ export default function ProfileScreen() {
         <View style={styles.heroSection}>
           <View style={styles.avatarWrapper}>
             <View style={styles.avatar}>
-              <Ionicons name="person" size={72} color={Colors.primary} />
+              <Ionicons name="person" size={72} color={colors.primary} />
             </View>
 
             <View style={styles.levelBadge}>
@@ -116,7 +120,7 @@ export default function ProfileScreen() {
 
         <View style={styles.impactCard}>
           <View style={styles.impactCardTop}>
-            <Ionicons name="sparkles" size={32} color={Colors.primary} />
+            <Ionicons name="sparkles" size={32} color={colors.primary} />
             <TouchableOpacity style={styles.reportBtn}>
               <Text style={styles.reportBtnText}>View Full Report</Text>
             </TouchableOpacity>
@@ -145,7 +149,7 @@ export default function ProfileScreen() {
                     <Ionicons
                       name={item.icon}
                       size={22}
-                      color={Colors.primary}
+                      color={colors.primary}
                     />
                   </View>
                   <View>
@@ -156,7 +160,7 @@ export default function ProfileScreen() {
                 <Ionicons
                   name="chevron-forward"
                   size={18}
-                  color={Colors.outline}
+                  color={colors.outline}
                 />
               </TouchableOpacity>
             ))}
@@ -167,10 +171,11 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
 
   header: {
@@ -186,7 +191,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.titleLg,
-    color: Colors.primaryContainer,
+    color: colors.primaryContainer,
     letterSpacing: -0.3,
   },
   iconBtn: {
@@ -216,7 +221,7 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: Radii.lg,
-    backgroundColor: Colors.surfaceContainerHighest,
+    backgroundColor: colors.surfaceContainerHighest,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -227,11 +232,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: Colors.tertiaryContainer,
+    backgroundColor: colors.tertiaryContainer,
     paddingHorizontal: Spacing.md,
     paddingVertical: 8,
     borderRadius: Radii.full,
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.15,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
@@ -250,19 +255,19 @@ const styles = StyleSheet.create({
     height: 52,
     width: 180,
     borderRadius: Radii.sm,
-    backgroundColor: Colors.surfaceContainerHigh,
+    backgroundColor: colors.surfaceContainerHigh,
   },
   firstName: {
     fontFamily: FontFamily.displayBold,
     fontSize: 45,
-    color: Colors.primary,
+    color: colors.primary,
     lineHeight: 56,
     letterSpacing: -2,
   },
   lastName: {
     fontFamily: FontFamily.displayBold,
     fontSize: 45,
-    color: Colors.primary,
+    color: colors.primary,
     lineHeight: 56,
     letterSpacing: -2,
   },
@@ -276,16 +281,16 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.tertiary,
+    backgroundColor: colors.tertiary,
   },
   memberText: {
     fontFamily: FontFamily.bodyMedium,
     fontSize: TypeScale.bodyMd,
-    color: Colors.textMuted,
+    color: colors.textMuted,
   },
 
   impactCard: {
-    backgroundColor: Colors.surfaceContainerHighest,
+    backgroundColor: colors.surfaceContainerHighest,
     borderRadius: Radii.lg,
     padding: Spacing.xl,
     marginBottom: Spacing.xxl,
@@ -298,7 +303,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   reportBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: Spacing.lg,
     paddingVertical: 10,
     borderRadius: Radii.full,
@@ -306,18 +311,18 @@ const styles = StyleSheet.create({
   reportBtnText: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.bodySm,
-    color: Colors.onPrimary,
+    color: colors.onPrimary,
   },
   impactStat: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.headlineMd,
-    color: Colors.primary,
+    color: colors.primary,
     letterSpacing: -0.5,
   },
   impactSubtext: {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodyMd,
-    color: Colors.textMuted,
+    color: colors.textMuted,
     lineHeight: 22,
   },
 
@@ -327,7 +332,7 @@ const styles = StyleSheet.create({
   curatorTitle: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.titleMd,
-    color: Colors.primary,
+    color: colors.primary,
   },
   curatorList: {
     gap: Spacing.md,
@@ -337,7 +342,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: Spacing.lg,
-    backgroundColor: Colors.surfaceContainerLow,
+    backgroundColor: colors.surfaceContainerLow,
     borderRadius: Radii.md,
   },
   curatorItemLeft: {
@@ -350,19 +355,20 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.surfaceContainerHighest,
+    backgroundColor: colors.surfaceContainerHighest,
     alignItems: "center",
     justifyContent: "center",
   },
   curatorLabel: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.bodyLg,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 2,
   },
   curatorSublabel: {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodySm,
-    color: Colors.textMuted,
+    color: colors.textMuted,
   },
 });
+}

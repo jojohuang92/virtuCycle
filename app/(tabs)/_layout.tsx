@@ -1,17 +1,21 @@
-import { Colors } from "@/constants/Colors";
 import { FontFamily } from "@/constants/typography";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { useMemo } from "react";
 import { StyleSheet } from "react-native";
 
 export default function TabLayout() {
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.outline,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.outline,
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
@@ -44,28 +48,23 @@ export default function TabLayout() {
           ),
         }}
       />
-
-      <Tabs.Screen
-        name="settings"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }
 
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: Colors.surfaceContainerLowest,
-    borderTopColor: Colors.outlineVariant + "40",
-    borderTopWidth: 1,
-    paddingTop: 4,
-    height: 64,
-  },
-  tabLabel: {
-    fontFamily: FontFamily.bodySemiBold,
-    fontSize: 11,
-    marginBottom: 4,
-  },
-});
+function createStyles(colors: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
+    tabBar: {
+      backgroundColor: colors.surfaceContainerLowest,
+      borderTopColor: colors.outlineVariant + "40",
+      borderTopWidth: 1,
+      paddingTop: 4,
+      height: 64,
+    },
+    tabLabel: {
+      fontFamily: FontFamily.bodySemiBold,
+      fontSize: 11,
+      marginBottom: 4,
+    },
+  });
+}

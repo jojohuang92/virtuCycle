@@ -1,10 +1,11 @@
-import { Colors, Radii, Spacing } from "@/constants/Colors";
+import { Radii, Spacing } from "@/constants/Colors";
 import { FontFamily, TypeScale } from "@/constants/typography";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { signUpWithEmail, storeDemoSession } from "@/services/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -20,6 +21,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SignupScreen() {
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -77,7 +80,7 @@ export default function SignupScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.brand}>
-          <Ionicons name="leaf" size={28} color={Colors.primary} />
+          <Ionicons name="leaf" size={28} color={colors.primary} />
           <Text style={styles.brandName}>VirtuCycle</Text>
         </View>
         <Link href="/(auth)/login" asChild>
@@ -111,7 +114,7 @@ export default function SignupScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="John"
-                placeholderTextColor={Colors.outline + "80"}
+                placeholderTextColor={colors.outline + "80"}
                 value={firstName}
                 onChangeText={setFirstName}
                 autoCapitalize="words"
@@ -127,7 +130,7 @@ export default function SignupScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Smith"
-                placeholderTextColor={Colors.outline + "80"}
+                placeholderTextColor={colors.outline + "80"}
                 value={lastName}
                 onChangeText={setLastName}
                 autoCapitalize="words"
@@ -143,7 +146,7 @@ export default function SignupScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="name@domain.com"
-                placeholderTextColor={Colors.outline + "80"}
+                placeholderTextColor={colors.outline + "80"}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -161,7 +164,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={[styles.input, styles.passwordInput]}
                   placeholder="Min. 6 characters"
-                  placeholderTextColor={Colors.outline + "80"}
+                  placeholderTextColor={colors.outline + "80"}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!passwordVisible}
@@ -180,7 +183,7 @@ export default function SignupScreen() {
                   <Ionicons
                     name={passwordVisible ? "eye-off-outline" : "eye-outline"}
                     size={20}
-                    color={Colors.outline}
+                    color={colors.outline}
                   />
                 </Pressable>
               </View>
@@ -198,13 +201,13 @@ export default function SignupScreen() {
               accessibilityLabel="Create your account"
             >
               <LinearGradient
-                colors={[Colors.primary, Colors.primaryContainer]}
+                colors={[colors.primary, colors.primaryContainer]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.submitGradient}
               >
                 {loading ? (
-                  <ActivityIndicator color={Colors.onPrimary} />
+                  <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <Text style={styles.submitText}>Create Account</Text>
                 )}
@@ -227,10 +230,11 @@ export default function SignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   flex: {
     flex: 1,
@@ -250,13 +254,13 @@ const styles = StyleSheet.create({
   brandName: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.titleLg,
-    color: Colors.primary,
+    color: colors.primary,
     letterSpacing: -0.5,
   },
   signInLink: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: TypeScale.label,
-    color: Colors.primary + "B3",
+    color: colors.primary + "B3",
     letterSpacing: 2,
   },
   scroll: {
@@ -267,16 +271,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   card: {
-    backgroundColor: Colors.surfaceContainerLowest,
+    backgroundColor: colors.surfaceContainerLowest,
     borderRadius: Radii.lg,
     padding: Spacing.xl,
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.06,
     shadowRadius: 40,
     shadowOffset: { width: 0, height: 20 },
     elevation: 6,
     borderWidth: 1,
-    borderColor: Colors.outlineVariant + "1A",
+    borderColor: colors.outlineVariant + "1A",
   },
   cardHeader: {
     marginBottom: Spacing.xl,
@@ -284,14 +288,14 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.headlineMd,
-    color: Colors.primary,
+    color: colors.primary,
     marginBottom: 6,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodyMd,
-    color: Colors.textMuted,
+    color: colors.textMuted,
   },
   fieldGroup: {
     marginBottom: Spacing.lg,
@@ -299,18 +303,18 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: TypeScale.bodySm,
-    color: Colors.textMuted,
+    color: colors.textMuted,
     marginBottom: 8,
     marginLeft: 4,
   },
   input: {
-    backgroundColor: Colors.surfaceContainerLow,
+    backgroundColor: colors.surfaceContainerLow,
     borderRadius: Radii.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: 14,
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodyMd,
-    color: Colors.text,
+    color: colors.text,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
@@ -331,7 +335,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     borderRadius: Radii.full,
     overflow: "hidden",
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.2,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
@@ -349,19 +353,19 @@ const styles = StyleSheet.create({
   submitText: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.bodyLg,
-    color: Colors.onPrimary,
+    color: colors.onPrimary,
     letterSpacing: 0.2,
   },
   termsNotice: {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.label,
-    color: Colors.textMuted,
+    color: colors.textMuted,
     textAlign: "center",
     marginTop: Spacing.md,
     lineHeight: 18,
   },
   termsLink: {
-    color: Colors.primary,
+    color: colors.primary,
     fontFamily: FontFamily.bodySemiBold,
   },
   loginRow: {
@@ -373,12 +377,12 @@ const styles = StyleSheet.create({
   loginText: {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodySm,
-    color: Colors.textMuted,
+    color: colors.textMuted,
   },
   loginLink: {
     fontFamily: FontFamily.bodyBold,
     fontSize: TypeScale.bodySm,
-    color: Colors.primary,
+    color: colors.primary,
   },
   footer: {
     flexDirection: "row",
@@ -389,7 +393,8 @@ const styles = StyleSheet.create({
   footerLink: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: 10,
-    color: Colors.outline,
+    color: colors.outline,
     letterSpacing: 1.5,
   },
 });
+}

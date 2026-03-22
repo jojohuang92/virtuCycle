@@ -1,10 +1,11 @@
-import { Colors, Radii, Spacing } from "@/constants/Colors";
+import { Radii, Spacing } from "@/constants/Colors";
 import { FontFamily, TypeScale } from "@/constants/typography";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { signInWithEmail, storeDemoSession } from "@/services/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -20,6 +21,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -63,7 +66,7 @@ export default function LoginScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.brand}>
-          <Ionicons name="leaf" size={28} color={Colors.primary} />
+          <Ionicons name="leaf" size={28} color={colors.primary} />
           <Text style={styles.brandName}>VirtuCycle</Text>
         </View>
         <Pressable
@@ -76,7 +79,7 @@ export default function LoginScreen() {
           accessibilityLabel="Open accessibility mode"
         >
           <View style={styles.ttsIconWrap}>
-            <Ionicons name="accessibility" size={20} color={Colors.primary} />
+            <Ionicons name="accessibility" size={20} color={colors.primary} />
           </View>
           <Text style={styles.ttsLabel}>{"ACCESSIBILITY\nMODE"}</Text>
         </Pressable>
@@ -107,7 +110,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="name@domain.com"
-                placeholderTextColor={Colors.outline + "80"}
+                placeholderTextColor={colors.outline + "80"}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -130,7 +133,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={[styles.input, styles.passwordInput]}
                   placeholder="••••••••"
-                  placeholderTextColor={Colors.outline + "80"}
+                  placeholderTextColor={colors.outline + "80"}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!passwordVisible}
@@ -149,7 +152,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name={passwordVisible ? "eye-off-outline" : "eye-outline"}
                     size={20}
-                    color={Colors.outline}
+                    color={colors.outline}
                   />
                 </Pressable>
               </View>
@@ -167,13 +170,13 @@ export default function LoginScreen() {
               accessibilityLabel="Sign in"
             >
               <LinearGradient
-                colors={[Colors.primary, Colors.primaryContainer]}
+                colors={[colors.primary, colors.primaryContainer]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.signInGradient}
               >
                 {loading ? (
-                  <ActivityIndicator color={Colors.onPrimary} />
+                  <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <Text style={styles.signInText}>Sign In</Text>
                 )}
@@ -197,7 +200,7 @@ export default function LoginScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Google"
               >
-                <Ionicons name="logo-google" size={18} color={Colors.text} />
+                <Ionicons name="logo-google" size={18} color={colors.text} />
                 <Text style={styles.ssoBtnText}>Google</Text>
               </Pressable>
               <Pressable
@@ -208,7 +211,7 @@ export default function LoginScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Apple"
               >
-                <Ionicons name="logo-apple" size={18} color={Colors.text} />
+                <Ionicons name="logo-apple" size={18} color={colors.text} />
                 <Text style={styles.ssoBtnText}>Apple</Text>
               </Pressable>
             </View>
@@ -229,10 +232,11 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   flex: {
     flex: 1,
@@ -243,7 +247,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.background + "CC",
+    backgroundColor: colors.background + "CC",
   },
   brand: {
     flexDirection: "row",
@@ -253,24 +257,24 @@ const styles = StyleSheet.create({
   brandName: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.titleLg,
-    color: Colors.primary,
+    color: colors.primary,
     letterSpacing: -0.5,
   },
   signUpLink: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: TypeScale.label,
-    color: Colors.primary + "B3",
+    color: colors.primary + "B3",
     letterSpacing: 2,
   },
   ttsControl: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
-    backgroundColor: Colors.surfaceContainerLowest,
+    backgroundColor: colors.surfaceContainerLowest,
     borderRadius: Radii.full,
     paddingVertical: 10,
     paddingHorizontal: Spacing.md,
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.08,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
@@ -287,7 +291,7 @@ const styles = StyleSheet.create({
   ttsLabel: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.label,
-    color: Colors.primary,
+    color: colors.primary,
     textAlign: "center",
     letterSpacing: 1.1,
     lineHeight: 16,
@@ -300,16 +304,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   card: {
-    backgroundColor: Colors.surfaceContainerLowest,
+    backgroundColor: colors.surfaceContainerLowest,
     borderRadius: Radii.lg,
     padding: Spacing.xl,
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.06,
     shadowRadius: 40,
     shadowOffset: { width: 0, height: 20 },
     elevation: 6,
     borderWidth: 1,
-    borderColor: Colors.outlineVariant + "1A",
+    borderColor: colors.outlineVariant + "1A",
   },
   cardHeader: {
     marginBottom: Spacing.xl,
@@ -317,14 +321,14 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.headlineMd,
-    color: Colors.primary,
+    color: colors.primary,
     marginBottom: 6,
     letterSpacing: -0.5,
   },
   welcomeSubtitle: {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodyMd,
-    color: Colors.textMuted,
+    color: colors.textMuted,
   },
   fieldGroup: {
     marginBottom: Spacing.lg,
@@ -332,7 +336,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: TypeScale.bodySm,
-    color: Colors.textMuted,
+    color: colors.textMuted,
     marginBottom: 8,
     marginLeft: 4,
   },
@@ -346,17 +350,17 @@ const styles = StyleSheet.create({
   forgotLink: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: TypeScale.label,
-    color: Colors.primary + "B3",
+    color: colors.primary + "B3",
     letterSpacing: 1,
   },
   input: {
-    backgroundColor: Colors.surfaceContainerLow,
+    backgroundColor: colors.surfaceContainerLow,
     borderRadius: Radii.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: 14,
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodyMd,
-    color: Colors.text,
+    color: colors.text,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
@@ -377,7 +381,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     borderRadius: Radii.full,
     overflow: "hidden",
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOpacity: 0.2,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
@@ -395,7 +399,7 @@ const styles = StyleSheet.create({
   signInText: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.bodyLg,
-    color: Colors.onPrimary,
+    color: colors.onPrimary,
     letterSpacing: 0.2,
   },
   dividerRow: {
@@ -407,12 +411,12 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.outlineVariant + "4D",
+    backgroundColor: colors.outlineVariant + "4D",
   },
   dividerLabel: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: 10,
-    color: Colors.outline,
+    color: colors.outline,
     letterSpacing: 2,
   },
   ssoRow: {
@@ -425,17 +429,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: Colors.surfaceContainerLow,
+    backgroundColor: colors.surfaceContainerLow,
     borderRadius: Radii.full,
     paddingVertical: 14,
   },
   ssoBtnPressed: {
-    backgroundColor: Colors.surfaceContainerHigh,
+    backgroundColor: colors.surfaceContainerHigh,
   },
   ssoBtnText: {
     fontFamily: FontFamily.bodyBold,
     fontSize: TypeScale.bodySm,
-    color: Colors.text,
+    color: colors.text,
   },
   joinRow: {
     flexDirection: "row",
@@ -446,12 +450,12 @@ const styles = StyleSheet.create({
   joinText: {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodySm,
-    color: Colors.textMuted,
+    color: colors.textMuted,
   },
   joinLink: {
     fontFamily: FontFamily.bodyBold,
     fontSize: TypeScale.bodySm,
-    color: Colors.primary,
+    color: colors.primary,
   },
   footer: {
     flexDirection: "row",
@@ -462,7 +466,8 @@ const styles = StyleSheet.create({
   footerLink: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: 10,
-    color: Colors.outline,
+    color: colors.outline,
     letterSpacing: 1.5,
   },
 });
+}
