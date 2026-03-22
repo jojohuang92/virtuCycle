@@ -1,5 +1,6 @@
-import { Colors } from '@/constants/Colors';
 import { FontFamily } from '@/constants/typography';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import { SessionProvider } from '@/hooks/useSession';
 import { getDemoSession, getSession, supabase } from '@/services/supabase';
 import {
   Manrope_700Bold,
@@ -15,13 +16,15 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { Slot, router, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayoutContent() {
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [manropeFontsLoaded] = useManropeFonts({
     Manrope_700Bold,
     Manrope_800ExtraBold,
@@ -94,17 +97,27 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  splash: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  splashLogo: {
-    fontFamily: FontFamily.displayBold,
-    fontSize: 32,
-    color: Colors.primary,
-    letterSpacing: -1,
-  },
-});
+export default function RootLayout() {
+  return (
+    <SessionProvider>
+      <RootLayoutContent />
+    </SessionProvider>
+  );
+}
+
+function createStyles(colors: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
+    splash: {
+      flex: 1,
+      backgroundColor: colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    splashLogo: {
+      fontFamily: FontFamily.displayBold,
+      fontSize: 32,
+      color: colors.primary,
+      letterSpacing: -1,
+    },
+  });
+}
