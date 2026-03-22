@@ -1,17 +1,19 @@
 import { BIN_CONFIG, type BinType } from "@/constants/bins";
 import type { RecyclingRules, ScanResult } from "@/types";
-import * as ImageManipulator from "expo-image-manipulator";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 const CLAUDE_API_KEY = process.env.EXPO_PUBLIC_CLAUDE_API_KEY;
 
 async function compressImage(uri: string): Promise<string> {
-  const result = await ImageManipulator.manipulateAsync(
-    uri,
-    [{ resize: { width: 900 } }],
-    { compress: 0.65, base64: true, format: ImageManipulator.SaveFormat.JPEG },
-  );
-
-  return result.base64 || "";
+  const ctx = ImageManipulator.manipulate(uri);
+  ctx.resize({ width: 900 });
+  const ref = await ctx.renderAsync();
+  const result = await ref.saveAsync({
+    compress: 0.65,
+    base64: true,
+    format: SaveFormat.JPEG,
+  });
+  return result.base64 ?? '';
 }
 
 function deriveFallbackScan(

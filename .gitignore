@@ -5,6 +5,7 @@ node_modules/
 
 # Expo
 .expo/
+.expo-shared/
 dist/
 web-build/
 expo-env.d.ts
@@ -37,12 +38,21 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# native generated artifacts
+ios/Pods/
+ios/build/
+android/.gradle/
+android/local.properties
+android/**/build/
 
 # UI design examples
 stitch/
 
 # planning section
 VirtuCycle_Agent_Plan.md
+
+# local tooling
+.claude/
+
+# test output
+coverage/

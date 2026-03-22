@@ -1,12 +1,13 @@
-import { FontFamily } from '@/constants/typography';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import { SessionProvider } from '@/hooks/useSession';
-import { getDemoSession, getSession, supabase } from '@/services/supabase';
+import { FontFamily } from "@/constants/typography";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { getRecyclingRules } from "@/services/gemini";
+import { getUserLocation } from "@/services/location";
+import { getDemoSession, getSession, supabase } from "@/services/supabase";
 import {
   Manrope_700Bold,
   Manrope_800ExtraBold,
   useFonts as useManropeFonts,
-} from '@expo-google-fonts/manrope';
+} from "@expo-google-fonts/manrope";
 import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
@@ -16,7 +17,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { Slot, router, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -42,6 +43,21 @@ function RootLayoutContent() {
 
   const fontsLoaded = manropeFontsLoaded && jakartaFontsLoaded;
 
+  useEffect(() => {
+    async function prefetchLocalRecyclingRules() {
+      try {
+        const location = await getUserLocation();
+        const city = location?.city || "General";
+        const state = location?.state || "";
+        await getRecyclingRules(city, state);
+      } catch (error) {
+        console.warn("Failed to prefetch recycling rules:", error);
+      }
+    }
+
+    prefetchLocalRecyclingRules();
+  }, []);
+
   // Resolve initial auth state
   useEffect(() => {
     async function resolveAuth() {
@@ -66,12 +82,12 @@ function RootLayoutContent() {
   useEffect(() => {
     if (!authResolved || !fontsLoaded) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup = segments[0] === "(auth)";
 
     if (!isSignedIn && !inAuthGroup) {
-      router.replace('/(auth)/login');
+      router.replace("/(auth)/login");
     } else if (isSignedIn && inAuthGroup) {
-      router.replace('/(tabs)/dashboard');
+      router.replace("/(tabs)/dashboard");
     }
   }, [authResolved, isSignedIn, fontsLoaded, segments]);
 
@@ -98,11 +114,7 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
-  return (
-    <SessionProvider>
-      <RootLayoutContent />
-    </SessionProvider>
-  );
+  return <RootLayoutContent />;
 }
 
 function createStyles(colors: ReturnType<typeof useAppTheme>) {
@@ -110,8 +122,8 @@ function createStyles(colors: ReturnType<typeof useAppTheme>) {
     splash: {
       flex: 1,
       backgroundColor: colors.background,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
     },
     splashLogo: {
       fontFamily: FontFamily.displayBold,

@@ -1,10 +1,32 @@
 import type { RecyclingRules } from "@/types";
 import { cache } from "./cache";
 
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_RULES_API_KEY;
 const GEMINI_URL = GEMINI_API_KEY
-  ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
+  ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
   : null;
+
+const RULES_RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    city: { type: "STRING" },
+    state: { type: "STRING" },
+    recycling: { type: "ARRAY", items: { type: "STRING" } },
+    trash: { type: "ARRAY", items: { type: "STRING" } },
+    compost: { type: "ARRAY", items: { type: "STRING" } },
+    hazardous: { type: "ARRAY", items: { type: "STRING" } },
+    notes: { type: "STRING" },
+  },
+  required: [
+    "city",
+    "state",
+    "recycling",
+    "trash",
+    "compost",
+    "hazardous",
+    "notes",
+  ],
+} as const;
 
 const FALLBACK_RULES: RecyclingRules = {
   city: "General",
@@ -54,14 +76,83 @@ function buildFallback(city: string, state: string): RecyclingRules {
   };
 }
 
+function extractBalancedJson(text: string): string | null {
+  const normalized = text
+    .replace(/```json|```/gi, "")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .trim();
+  const start = normalized.indexOf("{");
+
+  if (start === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = start; index < normalized.length; index += 1) {
+    const char = normalized[index];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) {
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return normalized.slice(start, index + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+function isRecyclingRules(value: unknown): value is RecyclingRules {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<RecyclingRules>;
+  return (
+    typeof candidate.city === "string" &&
+    typeof candidate.state === "string" &&
+    Array.isArray(candidate.recycling) &&
+    Array.isArray(candidate.trash) &&
+    Array.isArray(candidate.compost) &&
+    Array.isArray(candidate.hazardous) &&
+    typeof candidate.notes === "string"
+  );
+}
+
 function parseJsonResponse(text: string): RecyclingRules | null {
   try {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) {
+    const json = extractBalancedJson(text);
+    if (!json) {
       return null;
     }
 
-    return JSON.parse(match[0]) as RecyclingRules;
+    const parsed = JSON.parse(json) as unknown;
+    return isRecyclingRules(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -85,7 +176,7 @@ export async function getRecyclingRules(
     return fallback;
   }
 
-  const prompt = `What are the official recycling disposal rules for ${city}, ${state}? Return exactly this JSON structure: {"city":"${city}","state":"${state}","fetchedAt":${Date.now()},"recycling":["item"],"trash":["item"],"compost":["item"],"hazardous":["item"],"notes":"one short paragraph","source":"gemini"}`;
+  const prompt = `What are the current local recycling and disposal rules for ${city}, ${state}? Return only concise disposal guidance suitable for a mobile recycling app. Include common examples for each bin category and keep notes short.`;
 
   try {
     const response = await fetch(GEMINI_URL, {
@@ -93,6 +184,12 @@ export async function getRecyclingRules(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 500,
+          responseMimeType: "application/json",
+          responseSchema: RULES_RESPONSE_SCHEMA,
+        },
       }),
     });
 
@@ -101,7 +198,14 @@ export async function getRecyclingRules(
     }
 
     const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+    // Gemini 2.5 models include "thought" parts — skip them
+    const parts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
+    const text = parts
+      .filter((p: any) => p.text && !p.thought)
+      .map((p: any) => p.text)
+      .join("");
+
     const parsed = parseJsonResponse(text);
     const rules = parsed
       ? {
