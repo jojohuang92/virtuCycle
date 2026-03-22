@@ -1,5 +1,6 @@
 import { FontFamily } from "@/constants/typography";
 import { useAppTheme } from "@/hooks/useAppTheme";
+import { SessionProvider } from "@/hooks/useSession";
 import { getRecyclingRules } from "@/services/gemini";
 import { getUserLocation } from "@/services/location";
 import { getDemoSession, getSession, supabase } from "@/services/supabase";
@@ -14,12 +15,12 @@ import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   useFonts as usePlusJakartaFonts,
-} from '@expo-google-fonts/plus-jakarta-sans';
-import { Slot, router, useSegments } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+} from "@expo-google-fonts/plus-jakarta-sans";
+import { Slot, router, useSegments } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useMemo, useState } from "react";
-import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -114,7 +115,11 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
-  return <RootLayoutContent />;
+  return (
+    <SessionProvider>
+      <RootLayoutContent />
+    </SessionProvider>
+  );
 }
 
 function createStyles(colors: ReturnType<typeof useAppTheme>) {
