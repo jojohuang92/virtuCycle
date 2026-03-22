@@ -1,4 +1,12 @@
-import type { AccessibilityMode, ScanResult, UserProfile } from "@/types";
+import type {
+  AccessibilityMode,
+  FriendProfile,
+  FriendRequest,
+  FriendsData,
+  LeaderboardEntry,
+  ScanResult,
+  UserProfile,
+} from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient, type Session, type User } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
@@ -28,6 +36,66 @@ export const supabase =
 
 export function isSupabaseConfigured() {
   return Boolean(supabase);
+}
+
+function mapProfileRow(data: any, fallback?: Partial<FriendProfile>): FriendProfile {
+  return {
+    id: data?.id ?? fallback?.id ?? "",
+    email: data?.email ?? fallback?.email ?? "",
+    displayName:
+      data?.full_name ??
+      data?.display_name ??
+      fallback?.displayName ??
+      "VirtuCycle Member",
+    scansThisMonth: data?.scans_this_month ?? fallback?.scansThisMonth ?? 0,
+    ecoPoints: data?.eco_points ?? fallback?.ecoPoints ?? 0,
+    level: data?.level ?? fallback?.level ?? 1,
+    co2SavedKg: data?.co2_saved_kg ?? fallback?.co2SavedKg ?? 0,
+  };
+}
+
+function mapFriendRequestRow(data: any): FriendRequest {
+  return {
+    id: String(data.id),
+    senderId: data.sender_id,
+    receiverId: data.receiver_id,
+    status: data.status,
+    createdAt: new Date(data.created_at).getTime(),
+    senderProfile: data.sender ? mapProfileRow(data.sender) : undefined,
+    receiverProfile: data.receiver ? mapProfileRow(data.receiver) : undefined,
+  };
+}
+
+function createDemoFriendProfiles(currentUserId: string): FriendProfile[] {
+  return [
+    {
+      id: "demo-friend-ava",
+      email: "ava@virtucycle.demo",
+      displayName: "Ava Green",
+      scansThisMonth: 41,
+      ecoPoints: 13780,
+      level: 44,
+      co2SavedKg: 126.4,
+    },
+    {
+      id: "demo-friend-miles",
+      email: "miles@virtucycle.demo",
+      displayName: "Miles Carter",
+      scansThisMonth: 33,
+      ecoPoints: 11240,
+      level: 38,
+      co2SavedKg: 109.2,
+    },
+    {
+      id: "demo-friend-noor",
+      email: "noor@virtucycle.demo",
+      displayName: "Noor Patel",
+      scansThisMonth: 19,
+      ecoPoints: 9240,
+      level: 29,
+      co2SavedKg: 78.6,
+    },
+  ].filter((friend) => friend.id !== currentUserId);
 }
 
 function normalizeAccessibilityMode(value: unknown): AccessibilityMode {
@@ -173,6 +241,260 @@ export async function getProfile(
     scansThisMonth: data.scans_this_month ?? 0,
     joinedAt: new Date(data.created_at).getTime(),
   };
+}
+
+export async function getFriendsData(
+  user: User | null | undefined,
+): Promise<FriendsData> {
+  if (!supabase || !user) {
+    const demoFriends = createDemoFriendProfiles(user?.id ?? "");
+
+    return {
+      friends: demoFriends.slice(0, 2),
+      discoverableUsers: demoFriends.slice(2),
+      incomingRequests: [
+        {
+          id: "demo-request-incoming",
+          senderId: "demo-friend-noor",
+          receiverId: user?.id ?? "demo-user",
+          status: "pending" as const,
+          createdAt: Date.now() - 1000 * 60 * 60 * 18,
+          senderProfile: demoFriends[2],
+        },
+      ].filter((request) => request.senderProfile),
+      outgoingRequests: [],
+    };
+  }
+
+  const { data: profilesData, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, scans_this_month, eco_points, level, co2_saved_kg")
+    .neq("id", user.id);
+
+  if (profilesError) {
+    throw profilesError;
+  }
+
+  const { data: requestsData, error: requestsError } = await supabase
+    .from("friend_requests")
+    .select(
+      `
+        id,
+        sender_id,
+        receiver_id,
+        status,
+        created_at,
+        sender:profiles!friend_requests_sender_id_fkey (
+          id,
+          email,
+          full_name,
+          scans_this_month,
+          eco_points,
+          level,
+          co2_saved_kg
+        ),
+        receiver:profiles!friend_requests_receiver_id_fkey (
+          id,
+          email,
+          full_name,
+          scans_this_month,
+          eco_points,
+          level,
+          co2_saved_kg
+        )
+      `,
+    )
+    .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+  if (requestsError) {
+    throw requestsError;
+  }
+
+  const requests = (requestsData ?? []).map(mapFriendRequestRow);
+  const relatedUserIds = new Set<string>();
+
+  const friends = requests
+    .filter((request) => request.status === "accepted")
+    .map((request) => {
+      const otherProfile =
+        request.senderId === user.id
+          ? request.receiverProfile
+          : request.senderProfile;
+
+      if (otherProfile) {
+        relatedUserIds.add(otherProfile.id);
+      }
+
+      return otherProfile;
+    })
+    .filter((profile): profile is FriendProfile => Boolean(profile));
+
+  const incomingRequests = requests.filter((request) => {
+    const isIncoming =
+      request.status === "pending" && request.receiverId === user.id;
+
+    if (isIncoming && request.senderProfile) {
+      relatedUserIds.add(request.senderProfile.id);
+    }
+
+    return isIncoming;
+  });
+
+  const outgoingRequests = requests.filter((request) => {
+    const isOutgoing = request.status === "pending" && request.senderId === user.id;
+
+    if (isOutgoing && request.receiverProfile) {
+      relatedUserIds.add(request.receiverProfile.id);
+    }
+
+    return isOutgoing;
+  });
+
+  const discoverableUsers = (profilesData ?? [])
+    .map((profile) => mapProfileRow(profile))
+    .filter((profile) => !relatedUserIds.has(profile.id));
+
+  return {
+    friends,
+    discoverableUsers,
+    incomingRequests,
+    outgoingRequests,
+  };
+}
+
+export async function searchUsers(
+  user: User | null | undefined,
+  query: string,
+): Promise<FriendProfile[]> {
+  const trimmedQuery = query.trim();
+
+  if (!trimmedQuery) {
+    return [];
+  }
+
+  if (!supabase || !user) {
+    return createDemoFriendProfiles(user?.id ?? "").filter((profile) => {
+      const haystack = `${profile.displayName} ${profile.email}`.toLowerCase();
+      return haystack.includes(trimmedQuery.toLowerCase());
+    });
+  }
+
+  const friendsData = await getFriendsData(user);
+  const excludedIds = new Set<string>([
+    user.id,
+    ...friendsData.friends.map((friend) => friend.id),
+    ...friendsData.incomingRequests
+      .map((request) => request.senderProfile?.id)
+      .filter((id): id is string => Boolean(id)),
+    ...friendsData.outgoingRequests
+      .map((request) => request.receiverProfile?.id)
+      .filter((id): id is string => Boolean(id)),
+  ]);
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, scans_this_month, eco_points, level, co2_saved_kg")
+    .neq("id", user.id)
+    .limit(100);
+
+  if (error) {
+    throw error;
+  }
+
+  const loweredQuery = trimmedQuery.toLowerCase();
+
+  return (data ?? [])
+    .map((profile) => mapProfileRow(profile))
+    .filter((profile) => {
+      const haystack = `${profile.displayName} ${profile.email}`.toLowerCase();
+      return haystack.includes(loweredQuery);
+    })
+    .filter((profile) => !excludedIds.has(profile.id));
+}
+
+export async function sendFriendRequest(
+  user: User | null | undefined,
+  receiverId: string,
+) {
+  if (!supabase || !user) {
+    return;
+  }
+
+  const { error } = await supabase.from("friend_requests").insert({
+    sender_id: user.id,
+    receiver_id: receiverId,
+    status: "pending",
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function respondToFriendRequest(
+  user: User | null | undefined,
+  requestId: string,
+  status: "accepted" | "rejected",
+) {
+  if (!supabase || !user) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("friend_requests")
+    .update({ status })
+    .eq("id", requestId)
+    .eq("receiver_id", user.id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function getFriendsLeaderboard(
+  user: User | null | undefined,
+  currentProfile: UserProfile | null,
+): Promise<LeaderboardEntry[]> {
+  const currentEntry: LeaderboardEntry | null = currentProfile
+    ? {
+        id: currentProfile.id,
+        email: currentProfile.email,
+        displayName: currentProfile.displayName,
+        scansThisMonth: currentProfile.scansThisMonth,
+        ecoPoints: currentProfile.ecoPoints,
+        level: currentProfile.level,
+        co2SavedKg: currentProfile.co2SavedKg,
+        isCurrentUser: true,
+        rank: 1,
+      }
+    : null;
+
+  if (!supabase || !user) {
+    const demoFriends = createDemoFriendProfiles(user?.id ?? "");
+    const entries = [currentEntry, ...demoFriends.map((friend) => ({
+      ...friend,
+      isCurrentUser: false,
+      rank: 0,
+    }))].filter((entry): entry is LeaderboardEntry => Boolean(entry));
+
+    return entries
+      .sort((a, b) => b.scansThisMonth - a.scansThisMonth)
+      .map((entry, index) => ({ ...entry, rank: index + 1 }));
+  }
+
+  const friendsData = await getFriendsData(user);
+  const entries = [
+    currentEntry,
+    ...friendsData.friends.map((friend) => ({
+      ...friend,
+      isCurrentUser: false,
+      rank: 0,
+    })),
+  ].filter((entry): entry is LeaderboardEntry => Boolean(entry));
+
+  return entries
+    .sort((a, b) => b.scansThisMonth - a.scansThisMonth)
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
 export async function updateProfileSettings(

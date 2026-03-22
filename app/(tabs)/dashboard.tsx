@@ -2,10 +2,13 @@ import { Radii, Spacing } from "@/constants/Colors";
 import { FontFamily, TypeScale } from "@/constants/typography";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSession } from "@/hooks/useSession";
+import { getFriendsLeaderboard } from "@/services/supabase";
+import type { LeaderboardEntry } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -34,8 +37,38 @@ const RECENT_ITEMS = [
 export default function DashboardScreen() {
   const colors = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { profile } = useSession();
+  const { profile, user } = useSession();
   const firstName = profile?.displayName?.split(" ")[0] ?? null;
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLeaderboard() {
+      try {
+        setLeaderboardLoading(true);
+        const nextLeaderboard = await getFriendsLeaderboard(user, profile);
+
+        if (active) {
+          setLeaderboard(nextLeaderboard);
+        }
+      } finally {
+        if (active) {
+          setLeaderboardLoading(false);
+        }
+      }
+    }
+
+    void loadLeaderboard();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id, profile?.id, profile?.scansThisMonth, profile?.displayName]);
+
+  const currentUserRank =
+    leaderboard.find((entry) => entry.isCurrentUser)?.rank ?? leaderboard.length;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -147,7 +180,9 @@ export default function DashboardScreen() {
                   color={colors.onSecondaryContainer}
                 />
               </View>
-              <Text style={[styles.statNumber, styles.greenText]}>#3</Text>
+              <Text style={[styles.statNumber, styles.greenText]}>
+                #{currentUserRank || 1}
+              </Text>
               <Text style={[styles.statLabel, styles.greenLabelText]}>
                 FRIEND RANK
               </Text>
@@ -166,6 +201,47 @@ export default function DashboardScreen() {
 
         {/* Trash Recycled */}
         <View style={styles.archiveSection}>
+          <View style={styles.leaderboardSection}>
+            <View style={styles.archiveHeader}>
+              <Text style={styles.archiveTitle}>Friends Leaderboard</Text>
+            </View>
+
+            {leaderboardLoading ? (
+              <View style={styles.leaderboardLoading}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.archiveMeta}>Loading standings...</Text>
+              </View>
+            ) : (
+              <View style={styles.leaderboardList}>
+                {leaderboard.map((entry) => (
+                  <View
+                    key={entry.id}
+                    style={[
+                      styles.leaderboardRow,
+                      entry.isCurrentUser && styles.leaderboardRowCurrent,
+                    ]}
+                  >
+                    <View style={styles.leaderboardRank}>
+                      <Text style={styles.leaderboardRankText}>#{entry.rank}</Text>
+                    </View>
+                    <View style={styles.leaderboardInfo}>
+                      <Text style={styles.archiveName}>
+                        {entry.displayName}
+                        {entry.isCurrentUser ? " (You)" : ""}
+                      </Text>
+                      <Text style={styles.archiveMeta}>
+                        {entry.scansThisMonth} items recycled this month
+                      </Text>
+                    </View>
+                    <Text style={styles.leaderboardPoints}>
+                      {entry.scansThisMonth}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
           <View style={styles.archiveHeader}>
             <Text style={styles.archiveTitle}> Trash Recycled </Text>
             <TouchableOpacity>
@@ -424,6 +500,52 @@ function createStyles(colors: ReturnType<typeof useAppTheme>) {
 
   // ── Recent Archive ────────────────────────────────────────
   archiveSection: {},
+  leaderboardSection: {
+    marginBottom: Spacing.xl,
+  },
+  leaderboardLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+  },
+  leaderboardList: {
+    gap: Spacing.sm,
+  },
+  leaderboardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: colors.surfaceContainerLow,
+  },
+  leaderboardRowCurrent: {
+    backgroundColor: colors.secondaryContainer,
+  },
+  leaderboardRank: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.surfaceContainerHighest,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  leaderboardRankText: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.bodyMd,
+    color: colors.primary,
+  },
+  leaderboardInfo: {
+    flex: 1,
+  },
+  leaderboardPoints: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.titleMd,
+    color: colors.primary,
+  },
   archiveHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

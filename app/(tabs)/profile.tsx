@@ -2,21 +2,38 @@ import { Radii, Spacing } from "@/constants/Colors";
 import { FontFamily, TypeScale } from "@/constants/typography";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSession } from "@/hooks/useSession";
-import { signOut } from "@/services/supabase";
+import {
+  getFriendsData,
+  respondToFriendRequest,
+  searchUsers,
+  sendFriendRequest,
+  signOut,
+} from "@/services/supabase";
+import type { FriendProfile, FriendsData } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const CURATOR_LINKS = [
+  {
+    id: "friends",
+    icon: "people-outline" as const,
+    label: "Friends Network",
+    sublabel: "Find people, review requests, and grow your crew",
+    route: null,
+  },
   {
     id: "reports",
     icon: "bar-chart-outline" as const,
@@ -36,7 +53,83 @@ const CURATOR_LINKS = [
 export default function ProfileScreen() {
   const colors = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { profile, loading } = useSession();
+  const { profile, loading, user } = useSession();
+  const [friendsVisible, setFriendsVisible] = useState(false);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [friendsActionId, setFriendsActionId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<FriendProfile[]>([]);
+  const [friendsData, setFriendsData] = useState<FriendsData>({
+    friends: [],
+    discoverableUsers: [],
+    incomingRequests: [],
+    outgoingRequests: [],
+  });
+
+  async function loadFriends() {
+    try {
+      setFriendsLoading(true);
+      setFriendsData(await getFriendsData(user));
+    } catch (error) {
+      Alert.alert(
+        "Friends unavailable",
+        "We couldn't load your friends list right now.",
+      );
+    } finally {
+      setFriendsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (friendsVisible) {
+      void loadFriends();
+    }
+  }, [friendsVisible, user?.id]);
+
+  useEffect(() => {
+    if (!friendsVisible) {
+      return;
+    }
+
+    const trimmedQuery = searchQuery.trim();
+
+    if (!trimmedQuery) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        setSearchLoading(true);
+        const results = await searchUsers(user, trimmedQuery);
+
+        if (active) {
+          setSearchResults(results);
+        }
+      } catch (error) {
+        if (active) {
+          setSearchResults([]);
+          Alert.alert(
+            "Search unavailable",
+            "We couldn't search for people right now.",
+          );
+        }
+      } finally {
+        if (active) {
+          setSearchLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
+  }, [friendsVisible, searchQuery, user?.id]);
 
   async function handleSignOut() {
     Alert.alert("Sign out", "Are you sure you want to sign out?", [
@@ -53,6 +146,11 @@ export default function ProfileScreen() {
   }
 
   function handleCuratorPress(item: (typeof CURATOR_LINKS)[number]) {
+    if (item.id === "friends") {
+      setFriendsVisible(true);
+      return;
+    }
+
     if (item.route) {
       router.push(item.route as any);
       return;
@@ -67,6 +165,42 @@ export default function ProfileScreen() {
 
   const [firstName, ...rest] = (profile?.displayName ?? "").split(" ");
   const lastName = rest.join(" ");
+
+  async function handleSendFriendRequest(targetUserId: string) {
+    try {
+      setFriendsActionId(targetUserId);
+      await sendFriendRequest(user, targetUserId);
+      setSearchResults((current) =>
+        current.filter((person) => person.id !== targetUserId),
+      );
+      await loadFriends();
+    } catch (error: any) {
+      Alert.alert(
+        "Request failed",
+        error?.message ?? "We couldn't send that friend request.",
+      );
+    } finally {
+      setFriendsActionId(null);
+    }
+  }
+
+  async function handleRespondToRequest(
+    requestId: string,
+    status: "accepted" | "rejected",
+  ) {
+    try {
+      setFriendsActionId(requestId);
+      await respondToFriendRequest(user, requestId, status);
+      await loadFriends();
+    } catch (error: any) {
+      Alert.alert(
+        "Request failed",
+        error?.message ?? "We couldn't update that friend request.",
+      );
+    } finally {
+      setFriendsActionId(null);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -167,6 +301,212 @@ export default function ProfileScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={friendsVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setFriendsVisible(false)}
+      >
+        <SafeAreaView style={styles.modalSafe} edges={["top", "bottom"]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Friends Network</Text>
+            <TouchableOpacity
+              style={styles.modalClose}
+              onPress={() => setFriendsVisible(false)}
+            >
+              <Ionicons name="close" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {friendsLoading ? (
+            <View style={styles.modalLoadingState}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.modalLoadingText}>Loading your network...</Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.friendsSummaryRow}>
+                <View style={styles.summaryCard}>
+                  <Text style={styles.summaryValue}>
+                    {friendsData.friends.length}
+                  </Text>
+                  <Text style={styles.summaryLabel}>Friends</Text>
+                </View>
+                <View style={styles.summaryCard}>
+                  <Text style={styles.summaryValue}>
+                    {friendsData.incomingRequests.length}
+                  </Text>
+                  <Text style={styles.summaryLabel}>Requests</Text>
+                </View>
+              </View>
+
+              <View style={styles.friendsSection}>
+                <Text style={styles.friendsSectionTitle}>Search People</Text>
+                <View style={styles.searchRow}>
+                  <TextInput
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Search by name or email"
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                    style={styles.searchInput}
+                  />
+                </View>
+
+                {searchQuery.trim() ? (
+                  searchLoading ? (
+                    <View style={styles.searchState}>
+                      <ActivityIndicator size="small" color={colors.primary} />
+                      <Text style={styles.friendMeta}>Searching people...</Text>
+                    </View>
+                  ) : searchResults.length === 0 ? (
+                    <Text style={styles.emptyStateText}>
+                      No matching users found.
+                    </Text>
+                  ) : (
+                    searchResults.map((person) => (
+                      <View key={`search-${person.id}`} style={styles.friendCard}>
+                        <View style={styles.friendCardTop}>
+                          <View style={styles.friendInfo}>
+                            <Text style={styles.friendName}>{person.displayName}</Text>
+                            <Text style={styles.friendMeta}>{person.email}</Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.addFriendButton}
+                            disabled={friendsActionId === person.id}
+                            onPress={() => handleSendFriendRequest(person.id)}
+                          >
+                            <Text style={styles.addFriendButtonText}>
+                              {friendsActionId === person.id ? "Sending..." : "Add"}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))
+                  )
+                ) : (
+                  <Text style={styles.emptyStateText}>
+                    Search for anyone in the database by name or email.
+                  </Text>
+                )}
+              </View>
+
+              <View style={styles.friendsSection}>
+                <Text style={styles.friendsSectionTitle}>Incoming Requests</Text>
+                {friendsData.incomingRequests.length === 0 ? (
+                  <Text style={styles.emptyStateText}>
+                    No pending requests right now.
+                  </Text>
+                ) : (
+                  friendsData.incomingRequests.map((request) => (
+                    <View key={request.id} style={styles.friendCard}>
+                      <View style={styles.friendCardTop}>
+                        <View>
+                          <Text style={styles.friendName}>
+                            {request.senderProfile?.displayName ?? "Unknown user"}
+                          </Text>
+                          <Text style={styles.friendMeta}>
+                            {request.senderProfile?.scansThisMonth ?? 0} items this
+                            month
+                          </Text>
+                        </View>
+                        <View style={styles.requestActions}>
+                          <TouchableOpacity
+                            style={styles.acceptButton}
+                            disabled={friendsActionId === request.id}
+                            onPress={() =>
+                              handleRespondToRequest(request.id, "accepted")
+                            }
+                          >
+                            <Text style={styles.acceptButtonText}>Accept</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.rejectButton}
+                            disabled={friendsActionId === request.id}
+                            onPress={() =>
+                              handleRespondToRequest(request.id, "rejected")
+                            }
+                          >
+                            <Text style={styles.rejectButtonText}>Reject</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
+
+              <View style={styles.friendsSection}>
+                <Text style={styles.friendsSectionTitle}>Your Friends</Text>
+                {friendsData.friends.length === 0 ? (
+                  <Text style={styles.emptyStateText}>
+                    Add a few people to start competing on the leaderboard.
+                  </Text>
+                ) : (
+                  friendsData.friends.map((friend) => (
+                    <View key={friend.id} style={styles.friendCard}>
+                      <Text style={styles.friendName}>{friend.displayName}</Text>
+                      <Text style={styles.friendMeta}>
+                        {friend.scansThisMonth} items recycled this month
+                      </Text>
+                    </View>
+                  ))
+                )}
+              </View>
+
+              <View style={styles.friendsSection}>
+                <Text style={styles.friendsSectionTitle}>Discover People</Text>
+                {friendsData.discoverableUsers.length === 0 ? (
+                  <Text style={styles.emptyStateText}>
+                    You're connected with everyone we can find for now.
+                  </Text>
+                ) : (
+                  friendsData.discoverableUsers.map((person) => (
+                    <View key={person.id} style={styles.friendCard}>
+                      <View style={styles.friendCardTop}>
+                        <View style={styles.friendInfo}>
+                          <Text style={styles.friendName}>{person.displayName}</Text>
+                          <Text style={styles.friendMeta}>
+                            {person.scansThisMonth} items this month
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.addFriendButton}
+                          disabled={friendsActionId === person.id}
+                          onPress={() => handleSendFriendRequest(person.id)}
+                        >
+                          <Text style={styles.addFriendButtonText}>
+                            {friendsActionId === person.id ? "Sending..." : "Add"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
+
+              {friendsData.outgoingRequests.length > 0 ? (
+                <View style={styles.friendsSection}>
+                  <Text style={styles.friendsSectionTitle}>Sent Requests</Text>
+                  {friendsData.outgoingRequests.map((request) => (
+                    <View key={request.id} style={styles.friendCard}>
+                      <Text style={styles.friendName}>
+                        {request.receiverProfile?.displayName ?? "Unknown user"}
+                      </Text>
+                      <Text style={styles.friendMeta}>Pending approval</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -369,6 +709,170 @@ function createStyles(colors: ReturnType<typeof useAppTheme>) {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodySm,
     color: colors.textMuted,
+  },
+  modalSafe: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  modalTitle: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.titleLg,
+    color: colors.primary,
+  },
+  modalClose: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceContainerLow,
+  },
+  modalScroll: {
+    flex: 1,
+  },
+  modalContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+    gap: Spacing.lg,
+  },
+  modalLoadingState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.md,
+  },
+  modalLoadingText: {
+    fontFamily: FontFamily.bodyMedium,
+    fontSize: TypeScale.bodyMd,
+    color: colors.textMuted,
+  },
+  friendsSummaryRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: colors.surfaceContainerHighest,
+    borderRadius: Radii.md,
+    padding: Spacing.lg,
+    gap: 4,
+  },
+  summaryValue: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.headlineMd,
+    color: colors.primary,
+  },
+  summaryLabel: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: TypeScale.label,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  friendsSection: {
+    gap: Spacing.md,
+  },
+  searchRow: {
+    backgroundColor: colors.surfaceContainerHighest,
+    borderRadius: Radii.md,
+    padding: Spacing.sm,
+  },
+  searchInput: {
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: Radii.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 14,
+    fontFamily: FontFamily.body,
+    fontSize: TypeScale.bodyMd,
+    color: colors.text,
+  },
+  searchState: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    backgroundColor: colors.surfaceContainerHighest,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+  },
+  friendsSectionTitle: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.titleMd,
+    color: colors.primary,
+  },
+  friendCard: {
+    backgroundColor: colors.surfaceContainerHighest,
+    borderRadius: Radii.md,
+    padding: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  friendCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  friendInfo: {
+    flex: 1,
+  },
+  friendName: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.bodyLg,
+    color: colors.text,
+  },
+  friendMeta: {
+    fontFamily: FontFamily.body,
+    fontSize: TypeScale.bodySm,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  requestActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  addFriendButton: {
+    backgroundColor: colors.primary,
+    borderRadius: Radii.full,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 10,
+  },
+  addFriendButtonText: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.bodySm,
+    color: colors.onPrimary,
+  },
+  acceptButton: {
+    backgroundColor: colors.tertiary,
+    borderRadius: Radii.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+  },
+  acceptButtonText: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.bodySm,
+    color: colors.onPrimary,
+  },
+  rejectButton: {
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: Radii.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+  },
+  rejectButtonText: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.bodySm,
+    color: colors.text,
+  },
+  emptyStateText: {
+    fontFamily: FontFamily.body,
+    fontSize: TypeScale.bodyMd,
+    color: colors.textMuted,
+    lineHeight: 22,
   },
 });
 }
