@@ -3,13 +3,13 @@ import { FontFamily, TypeScale } from "@/constants/typography";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSession } from "@/hooks/useSession";
 import {
-  getFriendsData,
+  getAllUsers,
+  getMyFriendRequests,
   respondToFriendRequest,
-  searchUsers,
   sendFriendRequest,
   signOut,
 } from "@/services/supabase";
-import type { FriendProfile, FriendsData } from "@/types";
+import type { FriendProfile } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -58,78 +58,75 @@ export default function ProfileScreen() {
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [friendsActionId, setFriendsActionId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<FriendProfile[]>([]);
-  const [friendsData, setFriendsData] = useState<FriendsData>({
-    friends: [],
-    discoverableUsers: [],
-    incomingRequests: [],
-    outgoingRequests: [],
-  });
+  const [allUsers, setAllUsers] = useState<FriendProfile[]>([]);
+  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
+  const [incoming, setIncoming] = useState<{ requestId: string; senderId: string }[]>([]);
 
-  async function loadFriends() {
+  const friends = allUsers.filter((u) => friendIds.has(u.id));
+  const incomingProfiles = incoming
+    .map((req) => ({ ...req, profile: allUsers.find((u) => u.id === req.senderId) }))
+    .filter((r): r is typeof r & { profile: FriendProfile } => Boolean(r.profile));
+  const discoverUsers = allUsers.filter(
+    (u) =>
+      !friendIds.has(u.id) &&
+      !incoming.some((r) => r.senderId === u.id) &&
+      (searchQuery.trim() === "" ||
+        u.displayName.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+        u.email.toLowerCase().includes(searchQuery.trim().toLowerCase())),
+  );
+
+  async function loadUsers() {
     try {
       setFriendsLoading(true);
-      setFriendsData(await getFriendsData(user));
-    } catch (error) {
-      Alert.alert(
-        "Friends unavailable",
-        "We couldn't load your friends list right now.",
-      );
+      const [users, requests] = await Promise.all([
+        getAllUsers(user),
+        getMyFriendRequests(user),
+      ]);
+      setAllUsers(users);
+      setSentIds(requests.sentIds);
+      setFriendIds(requests.friendIds);
+      setIncoming(requests.incoming);
+    } catch (e: any) {
+      Alert.alert("Unavailable", e?.message ?? "Could not load users.");
     } finally {
       setFriendsLoading(false);
     }
   }
 
   useEffect(() => {
+    async function loadFriendCount() {
+      try {
+        const requests = await getMyFriendRequests(user);
+        setFriendIds(requests.friendIds);
+        setIncoming(requests.incoming);
+        setSentIds(requests.sentIds);
+      } catch {
+        // ignore
+      }
+    }
+    if (user) void loadFriendCount();
+  }, [user?.id]);
+
+  useEffect(() => {
     if (friendsVisible) {
-      void loadFriends();
+      void loadUsers();
+    } else {
+      setSearchQuery("");
     }
   }, [friendsVisible, user?.id]);
 
-  useEffect(() => {
-    if (!friendsVisible) {
-      return;
+  async function handleRespondToRequest(requestId: string, accept: boolean) {
+    try {
+      setFriendsActionId(requestId);
+      await respondToFriendRequest(user, requestId, accept ? "accepted" : "rejected");
+      await loadUsers();
+    } catch (e: any) {
+      Alert.alert("Error", e?.message ?? "Could not respond to request.");
+    } finally {
+      setFriendsActionId(null);
     }
-
-    const trimmedQuery = searchQuery.trim();
-
-    if (!trimmedQuery) {
-      setSearchResults([]);
-      setSearchLoading(false);
-      return;
-    }
-
-    let active = true;
-
-    const timeoutId = setTimeout(async () => {
-      try {
-        setSearchLoading(true);
-        const results = await searchUsers(user, trimmedQuery);
-
-        if (active) {
-          setSearchResults(results);
-        }
-      } catch (error) {
-        if (active) {
-          setSearchResults([]);
-          Alert.alert(
-            "Search unavailable",
-            "We couldn't search for people right now.",
-          );
-        }
-      } finally {
-        if (active) {
-          setSearchLoading(false);
-        }
-      }
-    }, 300);
-
-    return () => {
-      active = false;
-      clearTimeout(timeoutId);
-    };
-  }, [friendsVisible, searchQuery, user?.id]);
+  }
 
   async function handleSignOut() {
     Alert.alert("Sign out", "Are you sure you want to sign out?", [
@@ -170,32 +167,11 @@ export default function ProfileScreen() {
     try {
       setFriendsActionId(targetUserId);
       await sendFriendRequest(user, targetUserId);
-      setSearchResults((current) =>
-        current.filter((person) => person.id !== targetUserId),
-      );
-      await loadFriends();
+      setSentIds((prev) => new Set(prev).add(targetUserId));
     } catch (error: any) {
       Alert.alert(
         "Request failed",
         error?.message ?? "We couldn't send that friend request.",
-      );
-    } finally {
-      setFriendsActionId(null);
-    }
-  }
-
-  async function handleRespondToRequest(
-    requestId: string,
-    status: "accepted" | "rejected",
-  ) {
-    try {
-      setFriendsActionId(requestId);
-      await respondToFriendRequest(user, requestId, status);
-      await loadFriends();
-    } catch (error: any) {
-      Alert.alert(
-        "Request failed",
-        error?.message ?? "We couldn't update that friend request.",
       );
     } finally {
       setFriendsActionId(null);
@@ -248,6 +224,14 @@ export default function ProfileScreen() {
               <Text style={styles.memberText}>
                 {joinedYear ? `Member since ${joinedYear}` : "New member"}
               </Text>
+              {friendIds.size > 0 && (
+                <>
+                  <View style={styles.memberDot} />
+                  <Text style={styles.memberText}>
+                    {friendIds.size} {friendIds.size === 1 ? "Friend" : "Friends"}
+                  </Text>
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -322,7 +306,7 @@ export default function ProfileScreen() {
           {friendsLoading ? (
             <View style={styles.modalLoadingState}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.modalLoadingText}>Loading your network...</Text>
+              <Text style={styles.modalLoadingText}>Loading people...</Text>
             </View>
           ) : (
             <ScrollView
@@ -330,179 +314,103 @@ export default function ProfileScreen() {
               contentContainerStyle={styles.modalContent}
               showsVerticalScrollIndicator={false}
             >
-              <View style={styles.friendsSummaryRow}>
-                <View style={styles.summaryCard}>
-                  <Text style={styles.summaryValue}>
-                    {friendsData.friends.length}
-                  </Text>
-                  <Text style={styles.summaryLabel}>Friends</Text>
-                </View>
-                <View style={styles.summaryCard}>
-                  <Text style={styles.summaryValue}>
-                    {friendsData.incomingRequests.length}
-                  </Text>
-                  <Text style={styles.summaryLabel}>Requests</Text>
-                </View>
-              </View>
-
-              <View style={styles.friendsSection}>
-                <Text style={styles.friendsSectionTitle}>Search People</Text>
-                <View style={styles.searchRow}>
-                  <TextInput
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    placeholder="Search by name or email"
-                    placeholderTextColor={colors.textMuted}
-                    autoCapitalize="none"
-                    style={styles.searchInput}
-                  />
-                </View>
-
-                {searchQuery.trim() ? (
-                  searchLoading ? (
-                    <View style={styles.searchState}>
-                      <ActivityIndicator size="small" color={colors.primary} />
-                      <Text style={styles.friendMeta}>Searching people...</Text>
-                    </View>
-                  ) : searchResults.length === 0 ? (
-                    <Text style={styles.emptyStateText}>
-                      No matching users found.
-                    </Text>
-                  ) : (
-                    searchResults.map((person) => (
-                      <View key={`search-${person.id}`} style={styles.friendCard}>
-                        <View style={styles.friendCardTop}>
-                          <View style={styles.friendInfo}>
-                            <Text style={styles.friendName}>{person.displayName}</Text>
-                            <Text style={styles.friendMeta}>{person.email}</Text>
-                          </View>
-                          <TouchableOpacity
-                            style={styles.addFriendButton}
-                            disabled={friendsActionId === person.id}
-                            onPress={() => handleSendFriendRequest(person.id)}
-                          >
-                            <Text style={styles.addFriendButtonText}>
-                              {friendsActionId === person.id ? "Sending..." : "Add"}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    ))
-                  )
-                ) : (
-                  <Text style={styles.emptyStateText}>
-                    Search for anyone in the database by name or email.
-                  </Text>
-                )}
-              </View>
-
-              <View style={styles.friendsSection}>
-                <Text style={styles.friendsSectionTitle}>Incoming Requests</Text>
-                {friendsData.incomingRequests.length === 0 ? (
-                  <Text style={styles.emptyStateText}>
-                    No pending requests right now.
-                  </Text>
-                ) : (
-                  friendsData.incomingRequests.map((request) => (
-                    <View key={request.id} style={styles.friendCard}>
-                      <View style={styles.friendCardTop}>
-                        <View>
-                          <Text style={styles.friendName}>
-                            {request.senderProfile?.displayName ?? "Unknown user"}
-                          </Text>
-                          <Text style={styles.friendMeta}>
-                            {request.senderProfile?.scansThisMonth ?? 0} items this
-                            month
-                          </Text>
-                        </View>
-                        <View style={styles.requestActions}>
-                          <TouchableOpacity
-                            style={styles.acceptButton}
-                            disabled={friendsActionId === request.id}
-                            onPress={() =>
-                              handleRespondToRequest(request.id, "accepted")
-                            }
-                          >
-                            <Text style={styles.acceptButtonText}>Accept</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.rejectButton}
-                            disabled={friendsActionId === request.id}
-                            onPress={() =>
-                              handleRespondToRequest(request.id, "rejected")
-                            }
-                          >
-                            <Text style={styles.rejectButtonText}>Reject</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </View>
-                  ))
-                )}
-              </View>
-
-              <View style={styles.friendsSection}>
-                <Text style={styles.friendsSectionTitle}>Your Friends</Text>
-                {friendsData.friends.length === 0 ? (
-                  <Text style={styles.emptyStateText}>
-                    Add a few people to start competing on the leaderboard.
-                  </Text>
-                ) : (
-                  friendsData.friends.map((friend) => (
-                    <View key={friend.id} style={styles.friendCard}>
-                      <Text style={styles.friendName}>{friend.displayName}</Text>
-                      <Text style={styles.friendMeta}>
-                        {friend.scansThisMonth} items recycled this month
-                      </Text>
-                    </View>
-                  ))
-                )}
-              </View>
-
-              <View style={styles.friendsSection}>
-                <Text style={styles.friendsSectionTitle}>Discover People</Text>
-                {friendsData.discoverableUsers.length === 0 ? (
-                  <Text style={styles.emptyStateText}>
-                    You're connected with everyone we can find for now.
-                  </Text>
-                ) : (
-                  friendsData.discoverableUsers.map((person) => (
+              {/* Friends */}
+              {friends.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Friends ({friends.length})</Text>
+                  {friends.map((person) => (
                     <View key={person.id} style={styles.friendCard}>
                       <View style={styles.friendCardTop}>
                         <View style={styles.friendInfo}>
                           <Text style={styles.friendName}>{person.displayName}</Text>
-                          <Text style={styles.friendMeta}>
-                            {person.scansThisMonth} items this month
-                          </Text>
+                          <Text style={styles.friendMeta}>{person.email}</Text>
                         </View>
-                        <TouchableOpacity
-                          style={styles.addFriendButton}
-                          disabled={friendsActionId === person.id}
-                          onPress={() => handleSendFriendRequest(person.id)}
-                        >
-                          <Text style={styles.addFriendButtonText}>
-                            {friendsActionId === person.id ? "Sending..." : "Add"}
-                          </Text>
-                        </TouchableOpacity>
+                        <Text style={styles.friendsBadge}>Friends</Text>
                       </View>
                     </View>
-                  ))
-                )}
-              </View>
+                  ))}
+                </>
+              )}
 
-              {friendsData.outgoingRequests.length > 0 ? (
-                <View style={styles.friendsSection}>
-                  <Text style={styles.friendsSectionTitle}>Sent Requests</Text>
-                  {friendsData.outgoingRequests.map((request) => (
-                    <View key={request.id} style={styles.friendCard}>
-                      <Text style={styles.friendName}>
-                        {request.receiverProfile?.displayName ?? "Unknown user"}
-                      </Text>
-                      <Text style={styles.friendMeta}>Pending approval</Text>
+              {/* Incoming Requests */}
+              {incomingProfiles.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>Requests ({incomingProfiles.length})</Text>
+                  {incomingProfiles.map(({ requestId, profile }) => (
+                    <View key={requestId} style={styles.friendCard}>
+                      <View style={styles.friendCardTop}>
+                        <View style={styles.friendInfo}>
+                          <Text style={styles.friendName}>{profile.displayName}</Text>
+                          <Text style={styles.friendMeta}>{profile.email}</Text>
+                        </View>
+                        <View style={styles.requestActions}>
+                          <TouchableOpacity
+                            style={styles.acceptButton}
+                            disabled={friendsActionId === requestId}
+                            onPress={() => handleRespondToRequest(requestId, true)}
+                          >
+                            <Text style={styles.acceptButtonText}>
+                              {friendsActionId === requestId ? "..." : "Accept"}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.rejectButton}
+                            disabled={friendsActionId === requestId}
+                            onPress={() => handleRespondToRequest(requestId, false)}
+                          >
+                            <Text style={styles.rejectButtonText}>Decline</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
                     </View>
                   ))}
-                </View>
-              ) : null}
+                </>
+              )}
+
+              {/* Discover */}
+              <Text style={styles.sectionTitle}>Discover</Text>
+              <View style={styles.searchRow}>
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search by name"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="none"
+                  style={styles.searchInput}
+                />
+              </View>
+              {discoverUsers.length === 0 ? (
+                <Text style={styles.emptyStateText}>
+                  {searchQuery.trim() ? "No matching users found." : "No other users to discover."}
+                </Text>
+              ) : (
+                discoverUsers.map((person) => (
+                  <View key={person.id} style={styles.friendCard}>
+                    <View style={styles.friendCardTop}>
+                      <View style={styles.friendInfo}>
+                        <Text style={styles.friendName}>{person.displayName}</Text>
+                        <Text style={styles.friendMeta}>{person.email}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.addFriendButton,
+                          sentIds.has(person.id) && styles.addFriendButtonSent,
+                        ]}
+                        disabled={friendsActionId === person.id || sentIds.has(person.id)}
+                        onPress={() => handleSendFriendRequest(person.id)}
+                      >
+                        <Text style={styles.addFriendButtonText}>
+                          {friendsActionId === person.id
+                            ? "Sending..."
+                            : sentIds.has(person.id)
+                            ? "Sent"
+                            : "Add"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
             </ScrollView>
           )}
         </SafeAreaView>
@@ -841,6 +749,9 @@ function createStyles(colors: ReturnType<typeof useAppTheme>) {
     paddingHorizontal: Spacing.lg,
     paddingVertical: 10,
   },
+  addFriendButtonSent: {
+    backgroundColor: colors.surfaceContainerLow,
+  },
   addFriendButtonText: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.bodySm,
@@ -867,6 +778,19 @@ function createStyles(colors: ReturnType<typeof useAppTheme>) {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.bodySm,
     color: colors.text,
+  },
+  sectionTitle: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.bodyMd,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginBottom: Spacing.xs,
+  },
+  friendsBadge: {
+    fontFamily: FontFamily.bodySemiBold,
+    fontSize: TypeScale.bodySm,
+    color: colors.tertiary,
   },
   emptyStateText: {
     fontFamily: FontFamily.body,

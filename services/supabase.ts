@@ -412,6 +412,58 @@ export async function searchUsers(
     .filter((profile) => !excludedIds.has(profile.id));
 }
 
+export async function getAllUsers(
+  user: User | null | undefined,
+): Promise<FriendProfile[]> {
+  if (!supabase || !user) {
+    return createDemoFriendProfiles(user?.id ?? "");
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, full_name")
+    .neq("id", user.id)
+    .order("full_name", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((row) => mapProfileRow(row));
+}
+
+export async function getMyFriendRequests(user: User | null | undefined): Promise<{
+  sentIds: Set<string>;
+  incoming: { requestId: string; senderId: string }[];
+  friendIds: Set<string>;
+}> {
+  if (!supabase || !user) {
+    return { sentIds: new Set(), incoming: [], friendIds: new Set() };
+  }
+
+  const { data, error } = await supabase
+    .from("friend_requests")
+    .select("id, sender_id, receiver_id, status")
+    .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+  if (error) throw error;
+
+  const rows = data ?? [];
+  const sentIds = new Set(
+    rows.filter((r) => r.sender_id === user.id && r.status === "pending").map((r) => r.receiver_id),
+  );
+  const incoming = rows
+    .filter((r) => r.receiver_id === user.id && r.status === "pending")
+    .map((r) => ({ requestId: String(r.id), senderId: r.sender_id }));
+  const friendIds = new Set(
+    rows
+      .filter((r) => r.status === "accepted")
+      .map((r) => (r.sender_id === user.id ? r.receiver_id : r.sender_id)),
+  );
+
+  return { sentIds, incoming, friendIds };
+}
+
 export async function sendFriendRequest(
   user: User | null | undefined,
   receiverId: string,
@@ -482,11 +534,23 @@ export async function getFriendsLeaderboard(
       .map((entry, index) => ({ ...entry, rank: index + 1 }));
   }
 
-  const friendsData = await getFriendsData(user);
+  const { friendIds } = await getMyFriendRequests(user);
+
+  if (friendIds.size === 0) {
+    return currentEntry ? [{ ...currentEntry, rank: 1 }] : [];
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, full_name")
+    .in("id", Array.from(friendIds));
+
+  if (error) throw error;
+
   const entries = [
     currentEntry,
-    ...friendsData.friends.map((friend) => ({
-      ...friend,
+    ...(data ?? []).map((row) => ({
+      ...mapProfileRow(row),
       isCurrentUser: false,
       rank: 0,
     })),

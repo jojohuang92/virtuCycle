@@ -1,9 +1,10 @@
-import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { useAppTheme } from '@/hooks/useAppTheme';
-import * as Haptics from 'expo-haptics';
+import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import * as Speech from 'expo-speech';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+
 
 type BinType = 'Recycling' | 'Trash' | 'Compost' | 'Unknown';
 
@@ -48,15 +49,13 @@ export default function TabOneScreen() {
 
   const speakOnce = (message: string) => {
     if (message === lastSpoken) return;
-
+    setLastSpoken(message);
     Speech.stop();
     Speech.speak(message, {
-      language: 'en',
+      language: 'en-US',
       rate: 0.9,
-      pitch: 1,
+      pitch: 1.0,
     });
-
-    setLastSpoken(message);
   };
 
   const announceResult = async (bin: BinType, itemLabel?: string) => {
