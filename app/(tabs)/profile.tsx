@@ -1,3 +1,4 @@
+import ImpactReportContent from "@/components/ImpactReportContent";
 import { AccessibilityColors, Radii, Spacing } from "@/constants/Colors";
 import { FontFamily, TypeScale } from "@/constants/typography";
 import { useAppTheme } from "@/hooks/useAppTheme";
@@ -92,6 +93,7 @@ export default function ProfileScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { profile, loading, saveProfile, user, refreshProfile } = useSession();
   const [friendsVisible, setFriendsVisible] = useState(false);
+  const [reportsVisible, setReportsVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [friendsActionId, setFriendsActionId] = useState<string | null>(null);
@@ -244,6 +246,11 @@ export default function ProfileScreen() {
 
     if (item.id === "settings") {
       setSettingsVisible(true);
+      return;
+    }
+
+    if (item.id === "reports") {
+      setReportsVisible(true);
       return;
     }
 
@@ -402,7 +409,10 @@ export default function ProfileScreen() {
         <View style={styles.impactCard}>
           <View style={styles.impactCardTop}>
             <Ionicons name="sparkles" size={32} color={colors.primary} />
-            <TouchableOpacity style={styles.reportBtn}>
+            <TouchableOpacity
+              style={styles.reportBtn}
+              onPress={() => setReportsVisible(true)}
+            >
               <Text style={styles.reportBtnText}>View Full Report</Text>
             </TouchableOpacity>
           </View>
@@ -595,6 +605,27 @@ export default function ProfileScreen() {
               )}
             </ScrollView>
           )}
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={reportsVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setReportsVisible(false)}
+      >
+        <SafeAreaView style={styles.modalSafe} edges={["top", "bottom"]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Impact Reports</Text>
+            <TouchableOpacity
+              style={styles.modalClose}
+              onPress={() => setReportsVisible(false)}
+            >
+              <Ionicons name="close" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <ImpactReportContent contentContainerStyle={styles.modalContent} />
         </SafeAreaView>
       </Modal>
 
