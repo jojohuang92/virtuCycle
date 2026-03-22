@@ -20,12 +20,14 @@ const CURATOR_LINKS = [
     icon: "bar-chart-outline" as const,
     label: "Impact Reports",
     sublabel: "Detailed breakdown of your footprint",
+    route: null,
   },
   {
     id: "settings",
     icon: "settings-outline" as const,
     label: "Account Settings",
-    sublabel: "Privacy, notifications, and security",
+    sublabel: "Privacy, notifications, accessibility, and profile",
+    route: "/settings",
   },
 ];
 
@@ -46,6 +48,15 @@ export default function ProfileScreen() {
     ]);
   }
 
+  function handleCuratorPress(item: (typeof CURATOR_LINKS)[number]) {
+    if (item.route) {
+      router.push(item.route as any);
+      return;
+    }
+
+    Alert.alert("Coming soon", `${item.label} is not connected yet.`);
+  }
+
   const joinedYear = profile?.joinedAt
     ? new Date(profile.joinedAt).getFullYear()
     : null;
@@ -55,7 +66,6 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>Profile</Text>
@@ -70,14 +80,12 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Section */}
         <View style={styles.heroSection}>
-          {/* Avatar */}
           <View style={styles.avatarWrapper}>
             <View style={styles.avatar}>
               <Ionicons name="person" size={72} color={Colors.primary} />
             </View>
-            {/* Level badge */}
+
             <View style={styles.levelBadge}>
               <Ionicons name="leaf" size={14} color="#ffffff" />
               <Text style={styles.levelText}>
@@ -86,7 +94,6 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* Name & metadata */}
           <View style={styles.nameBlock}>
             {loading ? (
               <View style={styles.namePlaceholder} />
@@ -107,7 +114,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Impact Card */}
         <View style={styles.impactCard}>
           <View style={styles.impactCardTop}>
             <Ionicons name="sparkles" size={32} color={Colors.primary} />
@@ -124,7 +130,6 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        {/* Curator Dashboard */}
         <View style={styles.curatorSection}>
           <Text style={styles.curatorTitle}>Curator Dashboard</Text>
           <View style={styles.curatorList}>
@@ -133,6 +138,7 @@ export default function ProfileScreen() {
                 key={item.id}
                 style={styles.curatorItem}
                 activeOpacity={0.7}
+                onPress={() => handleCuratorPress(item)}
               >
                 <View style={styles.curatorItemLeft}>
                   <View style={styles.curatorIconWrap}>
@@ -167,7 +173,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
 
-  // ── Header ───────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -192,14 +197,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  // ── Scroll ───────────────────────────────────────────────
   scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xxl,
   },
 
-  // ── Hero ─────────────────────────────────────────────────
   heroSection: {
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.xxl,
@@ -281,7 +284,6 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
 
-  // ── Impact Card ──────────────────────────────────────────
   impactCard: {
     backgroundColor: Colors.surfaceContainerHighest,
     borderRadius: Radii.lg,
@@ -319,7 +321,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  // ── Curator Dashboard ────────────────────────────────────
   curatorSection: {
     gap: Spacing.lg,
   },
