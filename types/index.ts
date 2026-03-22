@@ -37,6 +37,7 @@ export interface UserProfile {
   co2SavedKg: number;
   scansThisMonth: number;
   joinedAt: number;
+  avatarUrl?: string | null;
 }
 
 export interface FriendProfile {

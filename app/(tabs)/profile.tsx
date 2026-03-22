@@ -8,14 +8,31 @@ import {
   respondToFriendRequest,
   sendFriendRequest,
   signOut,
+  updateAvatarUrl,
 } from "@/services/supabase";
 import type { FriendProfile } from "@/types";
+
+const AVATAR_OPTIONS = [
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Zoe&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Felix&backgroundColor=c0aede",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Luna&backgroundColor=d1d4f9",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Kai&backgroundColor=ffd5dc",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Nova&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=River&backgroundColor=c0aede",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Sage&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Ember&backgroundColor=d1d4f9",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Atlas&backgroundColor=ffd5dc",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Orion&backgroundColor=b6e3f4",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Ivy&backgroundColor=ffdfbf",
+  "https://api.dicebear.com/9.x/adventurer/png?seed=Echo&backgroundColor=c0aede",
+];
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -53,7 +70,7 @@ const CURATOR_LINKS = [
 export default function ProfileScreen() {
   const colors = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { profile, loading, user } = useSession();
+  const { profile, loading, user, refreshProfile } = useSession();
   const [friendsVisible, setFriendsVisible] = useState(false);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [friendsActionId, setFriendsActionId] = useState<string | null>(null);
@@ -115,6 +132,18 @@ export default function ProfileScreen() {
       setSearchQuery("");
     }
   }, [friendsVisible, user?.id]);
+
+  const [avatarPickerVisible, setAvatarPickerVisible] = useState(false);
+
+  async function handleSelectAvatar(url: string) {
+    try {
+      await updateAvatarUrl(user, url);
+      await refreshProfile();
+      setAvatarPickerVisible(false);
+    } catch (e: any) {
+      Alert.alert("Failed", e?.message ?? "Could not update avatar.");
+    }
+  }
 
   async function handleRespondToRequest(requestId: string, accept: boolean) {
     try {
@@ -196,9 +225,16 @@ export default function ProfileScreen() {
       >
         <View style={styles.heroSection}>
           <View style={styles.avatarWrapper}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={72} color={colors.primary} />
-            </View>
+            <TouchableOpacity style={styles.avatar} onPress={() => setAvatarPickerVisible(true)} activeOpacity={0.8}>
+              {profile?.avatarUrl ? (
+                <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImage} />
+              ) : (
+                <Ionicons name="person" size={72} color={colors.primary} />
+              )}
+              <View style={styles.avatarEditBadge}>
+                <Ionicons name="color-wand" size={12} color="#ffffff" />
+              </View>
+            </TouchableOpacity>
 
             <View style={styles.levelBadge}>
               <Ionicons name="leaf" size={14} color="#ffffff" />
@@ -244,10 +280,10 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <Text style={styles.impactStat}>
-            {profile?.scansThisMonth ?? 342} Items Recycled
+            {profile?.scansThisMonth ?? 0} Items Recycled
           </Text>
           <Text style={styles.impactSubtext}>
-            You've diverted {profile?.co2SavedKg?.toFixed(1) ?? "12.4"}kg of
+            You've diverted {(profile?.co2SavedKg ?? 0).toFixed(1)}kg of
             waste this month.
           </Text>
         </View>
@@ -415,6 +451,43 @@ export default function ProfileScreen() {
           )}
         </SafeAreaView>
       </Modal>
+
+      {/* Avatar Picker Modal */}
+      <Modal
+        visible={avatarPickerVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setAvatarPickerVisible(false)}
+      >
+        <SafeAreaView style={styles.modalSafe} edges={["top", "bottom"]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Choose Your Avatar</Text>
+            <TouchableOpacity style={styles.modalClose} onPress={() => setAvatarPickerVisible(false)}>
+              <Ionicons name="close" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.avatarGrid}>
+            {AVATAR_OPTIONS.map((url) => (
+              <TouchableOpacity
+                key={url}
+                onPress={() => handleSelectAvatar(url)}
+                style={[
+                  styles.avatarGridItem,
+                  profile?.avatarUrl === url && styles.avatarGridItemSelected,
+                ]}
+                activeOpacity={0.75}
+              >
+                <Image source={{ uri: url }} style={styles.avatarGridImage} />
+                {profile?.avatarUrl === url && (
+                  <View style={styles.avatarGridCheck}>
+                    <Ionicons name="checkmark" size={16} color="#ffffff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -470,6 +543,23 @@ function createStyles(colors: ReturnType<typeof useAppTheme>) {
     height: 160,
     borderRadius: Radii.lg,
     backgroundColor: colors.surfaceContainerHighest,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 160,
+    height: 160,
+    borderRadius: Radii.lg,
+  },
+  avatarEditBadge: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -797,6 +887,39 @@ function createStyles(colors: ReturnType<typeof useAppTheme>) {
     fontSize: TypeScale.bodyMd,
     color: colors.textMuted,
     lineHeight: 22,
+  },
+  avatarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    padding: Spacing.md,
+    gap: Spacing.md,
+    justifyContent: "center",
+  },
+  avatarGridItem: {
+    width: 100,
+    height: 100,
+    borderRadius: Radii.md,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  avatarGridItemSelected: {
+    borderColor: colors.primary,
+  },
+  avatarGridImage: {
+    width: 100,
+    height: 100,
+  },
+  avatarGridCheck: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 }

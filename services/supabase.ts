@@ -240,6 +240,7 @@ export async function getProfile(
     co2SavedKg: data.co2_saved_kg ?? 0,
     scansThisMonth: data.scans_this_month ?? 0,
     joinedAt: new Date(data.created_at).getTime(),
+    avatarUrl: data.avatar_url ?? null,
   };
 }
 
@@ -415,8 +416,11 @@ export async function searchUsers(
 export async function getAllUsers(
   user: User | null | undefined,
 ): Promise<FriendProfile[]> {
-  if (!supabase || !user) {
+  if (!supabase) {
     return createDemoFriendProfiles(user?.id ?? "");
+  }
+  if (!user) {
+    return [];
   }
 
   const { data, error } = await supabase
@@ -462,6 +466,20 @@ export async function getMyFriendRequests(user: User | null | undefined): Promis
   );
 
   return { sentIds, incoming, friendIds };
+}
+
+export async function updateAvatarUrl(
+  user: User | null | undefined,
+  avatarUrl: string,
+): Promise<void> {
+  if (!supabase || !user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: avatarUrl })
+    .eq("id", user.id);
+
+  if (error) throw error;
 }
 
 export async function sendFriendRequest(
@@ -521,7 +539,7 @@ export async function getFriendsLeaderboard(
       }
     : null;
 
-  if (!supabase || !user) {
+  if (!supabase) {
     const demoFriends = createDemoFriendProfiles(user?.id ?? "");
     const entries = [currentEntry, ...demoFriends.map((friend) => ({
       ...friend,
@@ -532,6 +550,10 @@ export async function getFriendsLeaderboard(
     return entries
       .sort((a, b) => b.scansThisMonth - a.scansThisMonth)
       .map((entry, index) => ({ ...entry, rank: index + 1 }));
+  }
+
+  if (!user) {
+    return currentEntry ? [{ ...currentEntry, rank: 1 }] : [];
   }
 
   const { friendIds } = await getMyFriendRequests(user);

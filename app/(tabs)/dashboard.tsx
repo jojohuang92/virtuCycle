@@ -9,6 +9,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -37,7 +38,7 @@ const RECENT_ITEMS = [
 export default function DashboardScreen() {
   const colors = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { profile, user } = useSession();
+  const { profile, user, ttsEnabled, toggleTTS } = useSession();
   const firstName = profile?.displayName?.split(" ")[0] ?? null;
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
@@ -76,29 +77,24 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={20} color={colors.primary} />
+            {profile?.avatarUrl ? (
+              <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="person" size={20} color={colors.primary} />
+            )}
           </View>
           <Text style={styles.appName}>VirtuCycle</Text>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={styles.iconBtn}
-            accessibilityLabel="Accessibility mode"
+            style={[styles.iconBtn, ttsEnabled && styles.iconBtnActive]}
+            accessibilityLabel={ttsEnabled ? "Mute voice announcements" : "Enable voice announcements"}
+            onPress={toggleTTS}
           >
             <Ionicons
-              name="accessibility-outline"
+              name={ttsEnabled ? "volume-high-outline" : "volume-mute-outline"}
               size={22}
-              color={colors.primary}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconBtn}
-            accessibilityLabel="Notifications"
-          >
-            <Ionicons
-              name="notifications-outline"
-              size={22}
-              color={colors.primary}
+              color={ttsEnabled ? colors.onPrimary : colors.primary}
             />
           </TouchableOpacity>
         </View>
@@ -308,6 +304,12 @@ function createStyles(colors: ReturnType<typeof useAppTheme>) {
     backgroundColor: colors.primaryContainer + "55",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   appName: {
     fontFamily: FontFamily.displayBold,
@@ -325,6 +327,9 @@ function createStyles(colors: ReturnType<typeof useAppTheme>) {
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconBtnActive: {
+    backgroundColor: colors.primary,
   },
 
   // ── Scroll ───────────────────────────────────────────────

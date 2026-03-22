@@ -1,4 +1,5 @@
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useSession } from '@/hooks/useSession';
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
@@ -10,6 +11,7 @@ type BinType = 'Recycling' | 'Trash' | 'Compost' | 'Unknown';
 
 export default function TabOneScreen() {
   const colors = useAppTheme();
+  const { ttsEnabled } = useSession();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const cameraRef = useRef<CameraView | null>(null);
 
@@ -50,6 +52,7 @@ export default function TabOneScreen() {
   const speakOnce = (message: string) => {
     if (message === lastSpoken) return;
     setLastSpoken(message);
+    if (!ttsEnabled) return;
     Speech.stop();
     Speech.speak(message, {
       language: 'en-US',
