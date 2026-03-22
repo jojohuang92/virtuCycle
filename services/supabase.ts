@@ -1,16 +1,24 @@
 import type {
-  AccessibilityMode,
-  FriendProfile,
-  FriendRequest,
-  FriendsData,
-  LeaderboardEntry,
-  ScanResult,
-  UserProfile,
+    AccessibilityMode,
+    FriendProfile,
+    FriendRequest,
+    FriendsData,
+    LeaderboardEntry,
+    QuickTipRecord,
+    RecycledItemRecord,
+    ScanResult,
+    UserProfile,
 } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient, type Session, type User } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
+import {
+    getQuickTipsHistory as getLocalQuickTipsHistory,
+    getRecycledHistory as getLocalRecycledHistory,
+    saveQuickTipHistory as saveLocalQuickTipHistory,
+    saveRecycledHistory as saveLocalRecycledHistory,
+} from "./history";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -38,19 +46,28 @@ export function isSupabaseConfigured() {
   return Boolean(supabase);
 }
 
-function mapProfileRow(data: any, fallback?: Partial<FriendProfile>): FriendProfile {
+function mapProfileRow(
+  data: any,
+  fallback?: Partial<FriendProfile>,
+): FriendProfile {
   return {
     id: data?.id ?? fallback?.id ?? "",
     email: data?.email ?? fallback?.email ?? "",
     displayName:
       data?.full_name ??
+      data?.displayName ??
       data?.display_name ??
       fallback?.displayName ??
       "VirtuCycle Member",
-    scansThisMonth: data?.scans_this_month ?? fallback?.scansThisMonth ?? 0,
-    ecoPoints: data?.eco_points ?? fallback?.ecoPoints ?? 0,
+    scansThisMonth:
+      data?.scans_this_month ??
+      data?.scansThisMonth ??
+      fallback?.scansThisMonth ??
+      0,
+    ecoPoints: data?.eco_points ?? data?.ecoPoints ?? fallback?.ecoPoints ?? 0,
     level: data?.level ?? fallback?.level ?? 1,
-    co2SavedKg: data?.co2_saved_kg ?? fallback?.co2SavedKg ?? 0,
+    co2SavedKg:
+      data?.co2_saved_kg ?? data?.co2SavedKg ?? fallback?.co2SavedKg ?? 0,
   };
 }
 
@@ -64,6 +81,124 @@ function mapFriendRequestRow(data: any): FriendRequest {
     senderProfile: data.sender ? mapProfileRow(data.sender) : undefined,
     receiverProfile: data.receiver ? mapProfileRow(data.receiver) : undefined,
   };
+}
+
+function getCurrentMonthStartIso() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+}
+
+const SCAN_TIME_COLUMNS = ["created_at", "scanned_at", "timestamp"] as const;
+
+function isMissingScanColumnError(error: any, column: string) {
+  return (
+    error?.code === "42703" &&
+    typeof error?.message === "string" &&
+    error.message.includes(`column scans.${column} does not exist`)
+  );
+}
+
+async function getScanRowsForUsers(
+  userIds: string[],
+  monthStartIso?: string,
+): Promise<Array<{ user_id: string }>> {
+  if (!supabase || userIds.length === 0) {
+    return [];
+  }
+
+  if (monthStartIso) {
+    for (const column of SCAN_TIME_COLUMNS) {
+      const { data, error } = await supabase
+        .from("scans")
+        .select("user_id")
+        .in("user_id", userIds)
+        .gte(column, monthStartIso);
+
+      if (!error) {
+        return (data ?? []) as Array<{ user_id: string }>;
+      }
+
+      if (!isMissingScanColumnError(error, column)) {
+        throw error;
+      }
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("scans")
+    .select("user_id")
+    .in("user_id", userIds);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as Array<{ user_id: string }>;
+}
+
+async function insertScanRow(result: ScanResult, userId: string) {
+  if (!supabase) {
+    return;
+  }
+
+  const basePayload = {
+    user_id: userId,
+    item: result.item,
+    bin_type: result.binType,
+    confidence: result.confidence,
+    explanation: result.explanation,
+    source: result.source,
+  };
+  const timestampIso = new Date(result.timestamp).toISOString();
+
+  for (const column of SCAN_TIME_COLUMNS) {
+    const { error } = await supabase.from("scans").insert({
+      ...basePayload,
+      [column]: timestampIso,
+    });
+
+    if (!error) {
+      return;
+    }
+
+    if (!isMissingScanColumnError(error, column)) {
+      throw error;
+    }
+  }
+
+  const { error } = await supabase.from("scans").insert(basePayload);
+
+  if (error) {
+    throw error;
+  }
+}
+
+function applyLeaderboardRanks(
+  entries: Array<Omit<LeaderboardEntry, "rank">>,
+): LeaderboardEntry[] {
+  const sorted = [...entries].sort((left, right) => {
+    if (right.scansThisMonth !== left.scansThisMonth) {
+      return right.scansThisMonth - left.scansThisMonth;
+    }
+
+    return left.displayName.localeCompare(right.displayName);
+  });
+
+  let previousScanCount: number | null = null;
+  let previousRank = 0;
+
+  return sorted.map((entry, index) => {
+    const rank =
+      previousScanCount === entry.scansThisMonth ? previousRank : index + 1;
+
+    previousScanCount = entry.scansThisMonth;
+    previousRank = rank;
+
+    return {
+      ...entry,
+      rank,
+    };
+  });
 }
 
 function createDemoFriendProfiles(currentUserId: string): FriendProfile[] {
@@ -230,15 +365,17 @@ export async function getProfile(
     email: data.email,
     displayName:
       (user.user_metadata?.display_name as string) ||
+      data.display_name ||
+      data.displayName ||
       data.full_name ||
       "VirtuCycle Member",
     accessibilityMode: normalizeAccessibilityMode(
       user.user_metadata?.color_mode ?? data.color_mode,
     ),
-    ecoPoints: data.eco_points ?? 0,
+    ecoPoints: data.eco_points ?? data.ecoPoints ?? 0,
     level: data.level ?? 1,
-    co2SavedKg: data.co2_saved_kg ?? 0,
-    scansThisMonth: data.scans_this_month ?? 0,
+    co2SavedKg: data.co2_saved_kg ?? data.co2SavedKg ?? 0,
+    scansThisMonth: data.scans_this_month ?? data.scansThisMonth ?? 0,
     joinedAt: new Date(data.created_at).getTime(),
     avatarUrl: data.avatar_url ?? null,
   };
@@ -269,7 +406,7 @@ export async function getFriendsData(
 
   const { data: profilesData, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, email, full_name, scans_this_month, eco_points, level, co2_saved_kg")
+    .select("id, email, full_name, scans_this_month, level, co2_saved_kg")
     .neq("id", user.id);
 
   if (profilesError) {
@@ -290,7 +427,6 @@ export async function getFriendsData(
           email,
           full_name,
           scans_this_month,
-          eco_points,
           level,
           co2_saved_kg
         ),
@@ -299,7 +435,6 @@ export async function getFriendsData(
           email,
           full_name,
           scans_this_month,
-          eco_points,
           level,
           co2_saved_kg
         )
@@ -342,7 +477,8 @@ export async function getFriendsData(
   });
 
   const outgoingRequests = requests.filter((request) => {
-    const isOutgoing = request.status === "pending" && request.senderId === user.id;
+    const isOutgoing =
+      request.status === "pending" && request.senderId === user.id;
 
     if (isOutgoing && request.receiverProfile) {
       relatedUserIds.add(request.receiverProfile.id);
@@ -394,7 +530,7 @@ export async function searchUsers(
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, full_name, scans_this_month, eco_points, level, co2_saved_kg")
+    .select("id, email, full_name, scans_this_month, level, co2_saved_kg")
     .neq("id", user.id)
     .limit(100);
 
@@ -436,7 +572,9 @@ export async function getAllUsers(
   return (data ?? []).map((row) => mapProfileRow(row));
 }
 
-export async function getMyFriendRequests(user: User | null | undefined): Promise<{
+export async function getMyFriendRequests(
+  user: User | null | undefined,
+): Promise<{
   sentIds: Set<string>;
   incoming: { requestId: string; senderId: string }[];
   friendIds: Set<string>;
@@ -454,7 +592,9 @@ export async function getMyFriendRequests(user: User | null | undefined): Promis
 
   const rows = data ?? [];
   const sentIds = new Set(
-    rows.filter((r) => r.sender_id === user.id && r.status === "pending").map((r) => r.receiver_id),
+    rows
+      .filter((r) => r.sender_id === user.id && r.status === "pending")
+      .map((r) => r.receiver_id),
   );
   const incoming = rows
     .filter((r) => r.receiver_id === user.id && r.status === "pending")
@@ -525,7 +665,7 @@ export async function getFriendsLeaderboard(
   user: User | null | undefined,
   currentProfile: UserProfile | null,
 ): Promise<LeaderboardEntry[]> {
-  const currentEntry: LeaderboardEntry | null = currentProfile
+  const currentEntryBase: Omit<LeaderboardEntry, "rank"> | null = currentProfile
     ? {
         id: currentProfile.id,
         email: currentProfile.email,
@@ -535,52 +675,86 @@ export async function getFriendsLeaderboard(
         level: currentProfile.level,
         co2SavedKg: currentProfile.co2SavedKg,
         isCurrentUser: true,
-        rank: 1,
       }
     : null;
 
   if (!supabase) {
     const demoFriends = createDemoFriendProfiles(user?.id ?? "");
-    const entries = [currentEntry, ...demoFriends.map((friend) => ({
-      ...friend,
-      isCurrentUser: false,
-      rank: 0,
-    }))].filter((entry): entry is LeaderboardEntry => Boolean(entry));
+    const entries = [
+      currentEntryBase,
+      ...demoFriends.map((friend) => ({
+        ...friend,
+        isCurrentUser: false,
+      })),
+    ].filter((entry): entry is Omit<LeaderboardEntry, "rank"> =>
+      Boolean(entry),
+    );
 
-    return entries
-      .sort((a, b) => b.scansThisMonth - a.scansThisMonth)
-      .map((entry, index) => ({ ...entry, rank: index + 1 }));
+    return applyLeaderboardRanks(entries);
   }
 
   if (!user) {
-    return currentEntry ? [{ ...currentEntry, rank: 1 }] : [];
+    return currentEntryBase ? [{ ...currentEntryBase, rank: 1 }] : [];
   }
 
   const { friendIds } = await getMyFriendRequests(user);
+  const leaderboardUserIds = [user.id, ...Array.from(friendIds)];
+  const monthStartIso = getCurrentMonthStartIso();
 
   if (friendIds.size === 0) {
-    return currentEntry ? [{ ...currentEntry, rank: 1 }] : [];
+    const ownScans = await getScanRowsForUsers([user.id], monthStartIso);
+    const scanCount = Math.max(
+      ownScans?.length ?? 0,
+      currentEntryBase?.scansThisMonth ?? 0,
+    );
+
+    return currentEntryBase
+      ? [{ ...currentEntryBase, scansThisMonth: scanCount, rank: 1 }]
+      : [];
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, email, full_name")
-    .in("id", Array.from(friendIds));
+  const [{ data: profilesData, error: profilesError }, scansData] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, email, full_name, scans_this_month, level, co2_saved_kg")
+        .in("id", leaderboardUserIds),
+      getScanRowsForUsers(leaderboardUserIds, monthStartIso),
+    ]);
 
-  if (error) throw error;
+  if (profilesError) throw profilesError;
+
+  const scanCounts = new Map<string, number>();
+  for (const scan of scansData ?? []) {
+    const scanUserId = scan.user_id as string;
+    scanCounts.set(scanUserId, (scanCounts.get(scanUserId) ?? 0) + 1);
+  }
+
+  const currentEntry = currentEntryBase
+    ? {
+        ...currentEntryBase,
+        scansThisMonth: Math.max(
+          scanCounts.get(currentEntryBase.id) ?? 0,
+          currentEntryBase.scansThisMonth,
+        ),
+      }
+    : null;
 
   const entries = [
     currentEntry,
-    ...(data ?? []).map((row) => ({
-      ...mapProfileRow(row),
-      isCurrentUser: false,
-      rank: 0,
-    })),
-  ].filter((entry): entry is LeaderboardEntry => Boolean(entry));
+    ...(profilesData ?? [])
+      .filter((row) => row.id !== currentEntryBase?.id)
+      .map((row) => ({
+        ...mapProfileRow(row),
+        scansThisMonth: Math.max(
+          scanCounts.get(row.id) ?? 0,
+          row.scans_this_month ?? 0,
+        ),
+        isCurrentUser: false,
+      })),
+  ].filter((entry): entry is Omit<LeaderboardEntry, "rank"> => Boolean(entry));
 
-  return entries
-    .sort((a, b) => b.scansThisMonth - a.scansThisMonth)
-    .map((entry, index) => ({ ...entry, rank: index + 1 }));
+  return applyLeaderboardRanks(entries);
 }
 
 export async function updateProfileSettings(
@@ -660,13 +834,316 @@ export async function saveScanResult(result: ScanResult, userId?: string) {
     return;
   }
 
-  await supabase.from("scans").insert({
-    user_id: userId,
+  await insertScanRow(result, userId);
+}
+
+const RECYCLE_IMPACT: Record<
+  ScanResult["binType"],
+  { points: number; co2Kg: number }
+> = {
+  recycling: { points: 15, co2Kg: 0.35 },
+  compost: { points: 12, co2Kg: 0.28 },
+  trash: { points: 5, co2Kg: 0.1 },
+  hazardous: { points: 20, co2Kg: 0.45 },
+  unknown: { points: 3, co2Kg: 0.02 },
+};
+
+const RECYCLED_ITEMS_TABLE = "recycled_items";
+const QUICK_TIPS_TABLE = "quick_tips";
+
+function mapQuickTipRow(data: any): QuickTipRecord {
+  const source = data?.source === "gemini" ? "gemini" : "fallback";
+
+  return {
+    id: String(data?.id ?? ""),
+    userId: data?.user_id ?? data?.userId ?? undefined,
+    text: data?.tip ?? data?.text ?? "",
+    city: data?.city ?? "General",
+    state: data?.state ?? "",
+    source,
+    createdAt: new Date(
+      data?.created_at ?? data?.createdAt ?? Date.now(),
+    ).getTime(),
+  };
+}
+
+function mapRecycledItemRow(data: any): RecycledItemRecord {
+  const scannedAtValue =
+    data?.scanned_at ?? data?.scannedAt ?? data?.created_at ?? Date.now();
+  const recycledAtValue =
+    data?.recycled_at ?? data?.recycledAt ?? data?.created_at ?? Date.now();
+  const source =
+    data?.source === "mlkit" ||
+    data?.source === "gemini" ||
+    data?.source === "claude" ||
+    data?.source === "fallback"
+      ? data.source
+      : "fallback";
+  const binType =
+    data?.bin_type in RECYCLE_IMPACT
+      ? data.bin_type
+      : data?.binType in RECYCLE_IMPACT
+        ? data.binType
+        : "unknown";
+
+  return {
+    id:
+      String(data?.id ?? "") ||
+      `${data?.user_id ?? data?.userId ?? "guest"}-${recycledAtValue}`,
+    userId: data?.user_id ?? data?.userId ?? undefined,
+    item: data?.item ?? "Unknown item",
+    binType,
+    confidence: Number(data?.confidence ?? 0),
+    explanation: data?.explanation ?? "",
+    source,
+    scannedAt: new Date(scannedAtValue).getTime(),
+    recycledAt: new Date(recycledAtValue).getTime(),
+    impactPoints: Number(data?.impact_points ?? data?.impactPoints ?? 0),
+    impactCo2Kg: Number(data?.impact_co2_kg ?? data?.impactCo2Kg ?? 0),
+  };
+}
+
+function createRecycledItemRecord(
+  result: ScanResult,
+  impact: { points: number; co2Kg: number },
+  userId?: string,
+): RecycledItemRecord {
+  const recycledAt = Date.now();
+
+  return {
+    id: `${userId ?? "guest"}-${recycledAt}-${result.item}`,
+    userId,
     item: result.item,
-    bin_type: result.binType,
+    binType: result.binType,
     confidence: result.confidence,
     explanation: result.explanation,
     source: result.source,
-    created_at: new Date(result.timestamp).toISOString(),
+    scannedAt: result.timestamp,
+    recycledAt,
+    impactPoints: impact.points,
+    impactCo2Kg: impact.co2Kg,
+  };
+}
+
+function createQuickTipRecord(
+  tip: Pick<QuickTipRecord, "text" | "city" | "state" | "source">,
+  userId?: string,
+): QuickTipRecord {
+  const createdAt = Date.now();
+
+  return {
+    id: `${userId ?? "guest"}-${createdAt}-quick-tip`,
+    userId,
+    text: tip.text,
+    city: tip.city,
+    state: tip.state,
+    source: tip.source,
+    createdAt,
+  };
+}
+
+export async function getQuickTipsHistory(
+  userId?: string,
+): Promise<QuickTipRecord[]> {
+  if (!supabase || !userId) {
+    return getLocalQuickTipsHistory(userId);
+  }
+
+  const { data, error } = await supabase
+    .from(QUICK_TIPS_TABLE)
+    .select("id, user_id, tip, city, state, source, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn(
+      "Quick tip history query failed, falling back to local cache:",
+      error.message,
+    );
+    return getLocalQuickTipsHistory(userId);
+  }
+
+  return (data ?? []).map(mapQuickTipRow);
+}
+
+export async function storeQuickTip(
+  tip: Pick<QuickTipRecord, "text" | "city" | "state" | "source">,
+  userId?: string,
+): Promise<QuickTipRecord> {
+  const quickTipRecord = createQuickTipRecord(tip, userId);
+
+  if (!supabase || !userId) {
+    await saveLocalQuickTipHistory(quickTipRecord);
+    return quickTipRecord;
+  }
+
+  const { error } = await supabase.from(QUICK_TIPS_TABLE).insert({
+    id: quickTipRecord.id,
+    user_id: userId,
+    tip: quickTipRecord.text,
+    city: quickTipRecord.city,
+    state: quickTipRecord.state,
+    source: quickTipRecord.source,
+    created_at: new Date(quickTipRecord.createdAt).toISOString(),
   });
+
+  if (error) {
+    throw error;
+  }
+
+  await saveLocalQuickTipHistory(quickTipRecord);
+  return quickTipRecord;
+}
+
+export async function getRecycledHistory(
+  userId?: string,
+): Promise<RecycledItemRecord[]> {
+  if (!supabase || !userId) {
+    return getLocalRecycledHistory(userId);
+  }
+
+  const { data, error } = await supabase
+    .from(RECYCLED_ITEMS_TABLE)
+    .select(
+      "id, user_id, item, bin_type, confidence, explanation, source, scanned_at, recycled_at, impact_points, impact_co2_kg",
+    )
+    .eq("user_id", userId)
+    .order("recycled_at", { ascending: false });
+
+  if (error) {
+    console.warn(
+      "Recycled history query failed, falling back to local cache:",
+      error.message,
+    );
+    return getLocalRecycledHistory(userId);
+  }
+
+  return (data ?? []).map(mapRecycledItemRow);
+}
+
+export async function recordRecycledItem(result: ScanResult, userId?: string) {
+  const impact = RECYCLE_IMPACT[result.binType] ?? RECYCLE_IMPACT.unknown;
+  const recycledRecord = createRecycledItemRecord(result, impact, userId);
+
+  if (!supabase || !userId) {
+    await saveLocalRecycledHistory(recycledRecord);
+    const demoProfile = await getDemoSession();
+    if (!demoProfile) {
+      return;
+    }
+
+    const nextProfile: UserProfile = {
+      ...demoProfile,
+      scansThisMonth: demoProfile.scansThisMonth + 1,
+      ecoPoints: demoProfile.ecoPoints + impact.points,
+      co2SavedKg: Number((demoProfile.co2SavedKg + impact.co2Kg).toFixed(2)),
+    };
+
+    await AsyncStorage.setItem(
+      "virtucycle_demo_user",
+      JSON.stringify(nextProfile),
+    );
+    return;
+  }
+
+  const { error: recycledItemError } = await supabase
+    .from(RECYCLED_ITEMS_TABLE)
+    .insert({
+      id: recycledRecord.id,
+      user_id: userId,
+      item: recycledRecord.item,
+      bin_type: recycledRecord.binType,
+      confidence: recycledRecord.confidence,
+      explanation: recycledRecord.explanation,
+      source: recycledRecord.source,
+      scanned_at: new Date(recycledRecord.scannedAt).toISOString(),
+      recycled_at: new Date(recycledRecord.recycledAt).toISOString(),
+      impact_points: recycledRecord.impactPoints,
+      impact_co2_kg: recycledRecord.impactCo2Kg,
+    });
+
+  if (recycledItemError) {
+    throw recycledItemError;
+  }
+
+  const { data: profile, error: loadError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (loadError) {
+    throw loadError;
+  }
+
+  const currentScans =
+    profile?.scans_this_month ?? profile?.scansThisMonth ?? 0;
+  const currentCo2 = profile?.co2_saved_kg ?? profile?.co2SavedKg ?? 0;
+  const nextCo2 = Number((currentCo2 + impact.co2Kg).toFixed(2));
+
+  const updatePayload: Record<string, number> = {};
+
+  if (profile?.scans_this_month !== undefined) {
+    updatePayload.scans_this_month = currentScans + 1;
+  } else if (profile?.scansThisMonth !== undefined) {
+    updatePayload.scansThisMonth = currentScans + 1;
+  }
+
+  if (profile?.co2_saved_kg !== undefined) {
+    updatePayload.co2_saved_kg = nextCo2;
+  } else if (profile?.co2SavedKg !== undefined) {
+    updatePayload.co2SavedKg = nextCo2;
+  }
+
+  let updateError = null;
+
+  if (profile && Object.keys(updatePayload).length > 0) {
+    const { error } = await supabase
+      .from("profiles")
+      .update(updatePayload)
+      .eq("id", userId);
+
+    updateError = error;
+  } else if (profile) {
+    updateError = new Error(
+      "No recyclable stat columns were found on the profile row.",
+    );
+  } else {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const currentUser = session?.user;
+
+    const insertPayload: Record<string, string | number> = {
+      id: userId,
+      email: currentUser?.email ?? "",
+      full_name:
+        (currentUser?.user_metadata?.full_name as string | undefined) ??
+        (currentUser?.user_metadata?.display_name as string | undefined) ??
+        "VirtuCycle Member",
+    };
+
+    if (updatePayload.scans_this_month !== undefined) {
+      insertPayload.scans_this_month = updatePayload.scans_this_month;
+    }
+    if (updatePayload.scansThisMonth !== undefined) {
+      insertPayload.scansThisMonth = updatePayload.scansThisMonth;
+    }
+    if (updatePayload.co2_saved_kg !== undefined) {
+      insertPayload.co2_saved_kg = updatePayload.co2_saved_kg;
+    }
+    if (updatePayload.co2SavedKg !== undefined) {
+      insertPayload.co2SavedKg = updatePayload.co2SavedKg;
+    }
+
+    const { error } = await supabase.from("profiles").insert(insertPayload);
+
+    updateError = error;
+  }
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  await saveLocalRecycledHistory(recycledRecord);
 }

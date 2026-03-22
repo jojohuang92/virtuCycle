@@ -48,6 +48,20 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="recycled-history"
+        options={{
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="quick-tips"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

@@ -29,6 +29,30 @@ export interface ScanResult {
   bounds?: { x: number; y: number; width: number; height: number };
 }
 
+export interface RecycledItemRecord {
+  id: string;
+  userId?: string;
+  item: string;
+  binType: BinType;
+  confidence: number;
+  explanation: string;
+  source: ScanResult["source"];
+  scannedAt: number;
+  recycledAt: number;
+  impactPoints: number;
+  impactCo2Kg: number;
+}
+
+export interface QuickTipRecord {
+  id: string;
+  userId?: string;
+  text: string;
+  city: string;
+  state: string;
+  source: "gemini" | "fallback";
+  createdAt: number;
+}
+
 export interface UserProfile {
   id: string;
   email: string;

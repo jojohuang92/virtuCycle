@@ -5,6 +5,7 @@ import { useAccessibility } from "@/hooks/useAccessibility";
 import { useRecyclingRules } from "@/hooks/useRecyclingRules";
 import { useScanner } from "@/hooks/useScanner";
 import { useSession } from "@/hooks/useSession";
+import { recordRecycledItem } from "@/services/supabase";
 import {
   createDetectObjectsPlugin,
   type VisionDetectedObject,
@@ -57,6 +58,43 @@ type CapturedPhoto = {
   width: number;
   height: number;
 };
+
+function formatUnknownError(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  if (error && typeof error === "object") {
+    const candidate = error as {
+      message?: unknown;
+      details?: unknown;
+      hint?: unknown;
+      code?: unknown;
+      error_description?: unknown;
+    };
+
+    const parts = [
+      candidate.message,
+      candidate.details,
+      candidate.hint,
+      candidate.error_description,
+      candidate.code,
+    ].filter(
+      (value): value is string =>
+        typeof value === "string" && value.trim().length > 0,
+    );
+
+    if (parts.length > 0) {
+      return parts.join(" ");
+    }
+  }
+
+  return "Something went wrong while saving this recycle action.";
+}
 
 function rotateRectToPreview(
   rect: Rect,
@@ -217,10 +255,12 @@ export default function ScannerScreen() {
   );
   const [capturedDetection, setCapturedDetection] =
     useState<NormalizedBox | null>(null);
+  const [isConfirmingRecycle, setIsConfirmingRecycle] = useState(false);
+  const [recycleError, setRecycleError] = useState<string | null>(null);
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
 
-  const { toggleTTS, ttsEnabled, user } = useSession();
+  const { refreshProfile, toggleTTS, ttsEnabled, user } = useSession();
   const { rules } = useRecyclingRules();
   const { settings: accessibility } = useAccessibility();
   const { result, bounds, scanning, stage, error, scan, reset } = useScanner(
@@ -327,6 +367,7 @@ export default function ScannerScreen() {
     setLivePaused(false);
     setCapturedPhoto(null);
     setCapturedDetection(null);
+    setRecycleError(null);
     sheetTranslateY.setValue(0);
     reset();
   };
@@ -336,6 +377,28 @@ export default function ScannerScreen() {
       Speech.stop();
     }
     toggleTTS();
+  };
+
+  const handleConfirmRecycle = async () => {
+    if (!result || isConfirmingRecycle) {
+      return;
+    }
+
+    try {
+      setRecycleError(null);
+      setIsConfirmingRecycle(true);
+      await recordRecycledItem(result, user?.id);
+      handleReset();
+
+      void refreshProfile().catch((refreshError) => {
+        console.log("[Scanner] Profile refresh error:", refreshError);
+      });
+    } catch (confirmError) {
+      console.log("[Scanner] Recycle confirmation error:", confirmError);
+      setRecycleError(formatUnknownError(confirmError));
+    } finally {
+      setIsConfirmingRecycle(false);
+    }
   };
 
   const dismissSheet = () => {
@@ -595,14 +658,6 @@ export default function ScannerScreen() {
 
       {/* ── Top bar ── */}
       <SafeAreaView style={styles.topBar} edges={["top"]}>
-        <Pressable
-          style={styles.topBtn}
-          onPress={handleReset}
-          accessibilityLabel="Reset scan"
-        >
-          <Ionicons name="close" size={20} color="#fff" />
-        </Pressable>
-
         <View style={styles.liveBadge}>
           <View style={styles.liveDot} />
           <Text style={styles.liveText}>LIVE DETECTION</Text>
@@ -688,7 +743,33 @@ export default function ScannerScreen() {
             </View>
           </View>
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          {(recycleError || error) && (
+            <Text style={styles.errorText}>{recycleError || error}</Text>
+          )}
+
+          <Pressable
+            style={[
+              styles.recycleBtn,
+              isConfirmingRecycle && styles.recycleBtnDisabled,
+            ]}
+            onPress={handleConfirmRecycle}
+            disabled={isConfirmingRecycle}
+            accessibilityRole="button"
+            accessibilityLabel="Mark item as recycled"
+          >
+            {isConfirmingRecycle ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={22}
+                color="#fff"
+              />
+            )}
+            <Text style={styles.recycleBtnText}>
+              {isConfirmingRecycle ? "Saving..." : "I Recycled This"}
+            </Text>
+          </Pressable>
 
           <View style={styles.actionRow}>
             <Pressable style={styles.primaryBtn} onPress={handleReset}>
@@ -993,6 +1074,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     alignItems: "center",
+  },
+  recycleBtn: {
+    height: 58,
+    backgroundColor: Colors.tertiary,
+    borderRadius: Radii.full,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  recycleBtnDisabled: {
+    opacity: 0.7,
+  },
+  recycleBtnText: {
+    color: "#fff",
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.bodyMd,
   },
   primaryBtn: {
     flex: 1,

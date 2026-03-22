@@ -1,4 +1,4 @@
-import type { RecyclingRules } from "@/types";
+import type { QuickTipRecord, RecyclingRules } from "@/types";
 import { cache } from "./cache";
 
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_RULES_API_KEY;
@@ -26,6 +26,14 @@ const RULES_RESPONSE_SCHEMA = {
     "hazardous",
     "notes",
   ],
+} as const;
+
+const QUICK_TIP_RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    tip: { type: "STRING" },
+  },
+  required: ["tip"],
 } as const;
 
 const FALLBACK_RULES: RecyclingRules = {
@@ -66,6 +74,14 @@ const FALLBACK_RULES: RecyclingRules = {
     "General recycling guidelines. Check your local city website for specific rules.",
   source: "fallback",
 };
+
+const FALLBACK_QUICK_TIPS = [
+  "Rinse containers quickly to keep recyclable loads cleaner.",
+  "Flatten cardboard before binning it to save sorting space.",
+  "Keep batteries out of household bins and recycle them separately.",
+  "Dry paper and cardboard recycle better than damp materials.",
+  "Check local rules before recycling mixed-material packaging.",
+];
 
 function buildFallback(city: string, state: string): RecyclingRules {
   return {
@@ -155,6 +171,111 @@ function parseJsonResponse(text: string): RecyclingRules | null {
     return isRecyclingRules(parsed) ? parsed : null;
   } catch {
     return null;
+  }
+}
+
+function sanitizeQuickTip(text: string): string {
+  const cleaned = text
+    .replace(/^['"`]+|['"`]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = cleaned.split(" ").filter(Boolean).slice(0, 15);
+  return words.join(" ");
+}
+
+function parseQuickTipResponse(text: string): string | null {
+  try {
+    const json = extractBalancedJson(text);
+    if (!json) {
+      return null;
+    }
+
+    const parsed = JSON.parse(json) as { tip?: unknown };
+    return typeof parsed.tip === "string" ? sanitizeQuickTip(parsed.tip) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function generateQuickTip(
+  city: string,
+  state: string,
+  rules: RecyclingRules,
+  recentItems: string[],
+): Promise<Pick<QuickTipRecord, "text" | "city" | "state" | "source">> {
+  const fallbackTip = sanitizeQuickTip(
+    FALLBACK_QUICK_TIPS[Math.floor(Math.random() * FALLBACK_QUICK_TIPS.length)],
+  );
+
+  if (!GEMINI_URL) {
+    return {
+      text: fallbackTip,
+      city,
+      state,
+      source: "fallback",
+    };
+  }
+
+  const recentItemsText = recentItems.length
+    ? `Recent recycled items: ${recentItems.join(", ")}.`
+    : "No recent recycled items available yet.";
+
+  const prompt = `You are a recycling coach for ${city || "General"}, ${state || ""}.
+Local rules summary:
+- Recycling: ${rules.recycling.slice(0, 6).join(", ")}
+- Trash: ${rules.trash.slice(0, 6).join(", ")}
+- Compost: ${rules.compost.slice(0, 6).join(", ")}
+- Hazardous: ${rules.hazardous.slice(0, 6).join(", ")}
+- Notes: ${rules.notes}
+${recentItemsText}
+Return only compact JSON with one field: tip.
+The tip must be practical, plain English, and 15 words or fewer.
+Do not use quotes, bullet points, or emojis.`;
+
+  try {
+    const response = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 80,
+          responseMimeType: "application/json",
+          responseSchema: QUICK_TIP_RESPONSE_SCHEMA,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Gemini quick tip request failed with status ${response.status}`,
+      );
+    }
+
+    const data = await response.json();
+    const parts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
+    const text = parts
+      .filter((part: any) => part.text && !part.thought)
+      .map((part: any) => part.text)
+      .join("");
+
+    const parsedTip = parseQuickTipResponse(text);
+
+    return {
+      text: parsedTip || fallbackTip,
+      city,
+      state,
+      source: parsedTip ? "gemini" : "fallback",
+    };
+  } catch (error) {
+    console.error("Gemini quick tip fallback:", error);
+    return {
+      text: fallbackTip,
+      city,
+      state,
+      source: "fallback",
+    };
   }
 }
 

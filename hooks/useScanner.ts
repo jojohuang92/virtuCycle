@@ -4,9 +4,9 @@ import { saveScanHistory } from "@/services/history";
 import { detectWithMLKit } from "@/services/mlkit";
 import { saveScanResult } from "@/services/supabase";
 import type {
-  AccessibilitySettings,
-  RecyclingRules,
-  ScanResult,
+    AccessibilitySettings,
+    RecyclingRules,
+    ScanResult,
 } from "@/types";
 import * as Haptics from "expo-haptics";
 import * as Speech from "expo-speech";
@@ -18,6 +18,43 @@ const CONFIDENCE_THRESHOLD = 0.8;
 export type ScanStage = "idle" | "detecting" | "analyzing" | "done";
 
 type Bounds = { x: number; y: number; width: number; height: number };
+
+function formatUnknownError(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  if (error && typeof error === "object") {
+    const candidate = error as {
+      message?: unknown;
+      details?: unknown;
+      hint?: unknown;
+      code?: unknown;
+      error_description?: unknown;
+    };
+
+    const parts = [
+      candidate.message,
+      candidate.details,
+      candidate.hint,
+      candidate.error_description,
+      candidate.code,
+    ].filter(
+      (value): value is string =>
+        typeof value === "string" && value.trim().length > 0,
+    );
+
+    if (parts.length > 0) {
+      return parts.join(" ");
+    }
+  }
+
+  return "Something went wrong while processing the scan.";
+}
 
 function normalizeText(value: string): string {
   return value
@@ -231,8 +268,7 @@ export function useScanner(
       await fireFeedback(geminiResult, accessibility);
       return geminiResult;
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
+      setError(formatUnknownError(e));
     } finally {
       setScanning(false);
     }
