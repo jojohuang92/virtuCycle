@@ -30,6 +30,8 @@ PODS:
     - Yoga
   - ExpoAsset (55.0.10):
     - ExpoModulesCore
+  - ExpoAudio (55.0.9):
+    - ExpoModulesCore
   - ExpoCamera (55.0.10):
     - ExpoModulesCore
     - ZXingObjC/OneD
@@ -56,6 +58,8 @@ PODS:
   - ExpoImageManipulator (55.0.11):
     - ExpoModulesCore
     - SDWebImageWebPCoder
+  - ExpoImagePicker (55.0.13):
+    - ExpoModulesCore
   - ExpoKeepAwake (55.0.4):
     - ExpoModulesCore
   - ExpoLinearGradient (55.0.9):
@@ -2417,6 +2421,7 @@ DEPENDENCIES:
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - Expo (from `../node_modules/expo`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
+  - ExpoAudio (from `../node_modules/expo-audio/ios`)
   - ExpoCamera (from `../node_modules/expo-camera/ios`)
   - ExpoCrypto (from `../node_modules/expo-auth-session/node_modules/expo-crypto/ios`)
   - "ExpoDomWebView (from `../node_modules/@expo/dom-webview/ios`)"
@@ -2426,6 +2431,7 @@ DEPENDENCIES:
   - ExpoHaptics (from `../node_modules/expo-haptics/ios`)
   - ExpoImage (from `../node_modules/expo-image/ios`)
   - ExpoImageManipulator (from `../node_modules/expo-image-manipulator/ios`)
+  - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoLinearGradient (from `../node_modules/expo-linear-gradient/ios`)
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
@@ -2568,6 +2574,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo"
   ExpoAsset:
     :path: "../node_modules/expo-asset/ios"
+  ExpoAudio:
+    :path: "../node_modules/expo-audio/ios"
   ExpoCamera:
     :path: "../node_modules/expo-camera/ios"
   ExpoCrypto:
@@ -2586,6 +2594,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-image/ios"
   ExpoImageManipulator:
     :path: "../node_modules/expo-image-manipulator/ios"
+  ExpoImagePicker:
+    :path: "../node_modules/expo-image-picker/ios"
   ExpoKeepAwake:
     :path: "../node_modules/expo-keep-awake/ios"
   ExpoLinearGradient:
@@ -2789,6 +2799,7 @@ SPEC CHECKSUMS:
   EXConstants: 898c24a310046c0e68335619d0f379099a52e199
   Expo: d425652228e12e472b46f0eca1032fcdebe55701
   ExpoAsset: 4efd0227e808dfa84d286aa3663ded641ef73479
+  ExpoAudio: 9c6c4b4c9669be8e8892b423cc967c09d801bad4
   ExpoCamera: 902c2dd5f3eff8d0388686fa75f22272aca459d4
   ExpoCrypto: 33a6c4fb9ccac7a4d784954d0db6c3ba292123e9
   ExpoDomWebView: f101fb3db4b6eec4163fca51f7507189b7e48661
@@ -2798,6 +2809,7 @@ SPEC CHECKSUMS:
   ExpoHaptics: bc44f72943e785c2fdb912738a3665142569472d
   ExpoImage: 53ab717157f29bb5139f9f75b259f93f784b6847
   ExpoImageManipulator: f66e63e30deefe23be1eaf3c7133d369fe2e5684
+  ExpoImagePicker: 4463c7e793d904553fb832f7568e306fd7544bc9
   ExpoKeepAwake: 7f3b28c361c37389b18841bb52a58003b39fcb33
   ExpoLinearGradient: 2e52067758a25f9b51e3fc3f4077851c0756c81c
   ExpoLinking: 65631933a0bedad33a592bfd2ab9fce0f14e5737

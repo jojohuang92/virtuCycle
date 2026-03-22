@@ -171,6 +171,7 @@ function matchLabelToRules(
 async function fireFeedback(
   result: ScanResult,
   accessibility: AccessibilitySettings,
+  speechEnabled: boolean,
 ) {
   if (accessibility.haptics) {
     const pattern = BIN_CONFIG[result.binType].hapticPattern;
@@ -183,7 +184,7 @@ async function fireFeedback(
     }
   }
 
-  if (accessibility.autoSpeak) {
+  if (accessibility.autoSpeak && speechEnabled) {
     Speech.speak(
       `${BIN_CONFIG[result.binType].ttsPrefix} ${result.item}. ${result.explanation}`,
     );
@@ -193,6 +194,7 @@ async function fireFeedback(
 export function useScanner(
   rules: RecyclingRules | null,
   accessibility: AccessibilitySettings,
+  speechEnabled: boolean,
   userId?: string,
 ) {
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -233,7 +235,7 @@ export function useScanner(
         setStage("done");
         await saveScanHistory(finalResult);
         await saveScanResult(finalResult, userId);
-        await fireFeedback(finalResult, accessibility);
+        await fireFeedback(finalResult, accessibility, speechEnabled);
         return finalResult;
       }
 
@@ -265,7 +267,7 @@ export function useScanner(
       setStage("done");
       await saveScanHistory(geminiResult);
       await saveScanResult(geminiResult, userId);
-      await fireFeedback(geminiResult, accessibility);
+      await fireFeedback(geminiResult, accessibility, speechEnabled);
       return geminiResult;
     } catch (e) {
       setError(formatUnknownError(e));

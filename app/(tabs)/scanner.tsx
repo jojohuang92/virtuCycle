@@ -255,6 +255,7 @@ export default function ScannerScreen() {
   );
   const [capturedDetection, setCapturedDetection] =
     useState<NormalizedBox | null>(null);
+  const [isCapturingFrame, setIsCapturingFrame] = useState(false);
   const [isConfirmingRecycle, setIsConfirmingRecycle] = useState(false);
   const [recycleError, setRecycleError] = useState<string | null>(null);
   const scanLineAnim = useRef(new Animated.Value(0)).current;
@@ -266,6 +267,7 @@ export default function ScannerScreen() {
   const { result, bounds, scanning, stage, error, scan, reset } = useScanner(
     rules,
     accessibility,
+    ttsEnabled,
     user?.id,
   );
   const detectionPlugin = useMemo(() => createDetectObjectsPlugin(), []);
@@ -367,6 +369,7 @@ export default function ScannerScreen() {
     setLivePaused(false);
     setCapturedPhoto(null);
     setCapturedDetection(null);
+    setIsCapturingFrame(false);
     setRecycleError(null);
     sheetTranslateY.setValue(0);
     reset();
@@ -491,23 +494,30 @@ export default function ScannerScreen() {
   }, [livePaused, scanning, result]);
 
   const handleCapture = async () => {
-    if (!cameraRef.current || scanning || !isCameraReady) return;
+    if (!cameraRef.current || scanning || !isCameraReady || isCapturingFrame) {
+      return;
+    }
+
     try {
+      setIsCapturingFrame(true);
       const primaryDetection = liveDetections[0] ?? null;
       setLivePaused(true);
       setCapturedDetection(primaryDetection);
       setLiveDetections([]);
+
       const snapshot = await cameraRef.current.takeSnapshot({
-        quality: 100,
+        quality: 90,
       });
       const snapshotUri = snapshot.path.startsWith("file://")
         ? snapshot.path
         : `file://${snapshot.path}`;
+
       setCapturedPhoto({
         uri: snapshotUri,
         width: snapshot.width,
         height: snapshot.height,
       });
+
       const scanResult = await scan(
         snapshotUri,
         snapshot.width,
@@ -523,6 +533,8 @@ export default function ScannerScreen() {
       setCapturedPhoto(null);
       setCapturedDetection(null);
       console.log("[Scanner] Capture error:", e);
+    } finally {
+      setIsCapturingFrame(false);
     }
   };
 
@@ -565,43 +577,45 @@ export default function ScannerScreen() {
   return (
     <View style={styles.container}>
       {/* ── Camera feed ── */}
-      {capturedPhoto ? (
-        <Image
-          source={{ uri: capturedPhoto.uri }}
-          style={styles.camera}
-          resizeMode="cover"
-          onLayout={(e: LayoutChangeEvent) =>
-            setViewSize({
-              width: e.nativeEvent.layout.width,
-              height: e.nativeEvent.layout.height,
-            })
-          }
-        />
-      ) : (
-        <Camera
-          ref={cameraRef}
-          style={styles.camera}
-          device={device}
-          isActive={true}
-          photo={true}
-          video={true}
-          outputOrientation="preview"
-          torch={torch ? "on" : "off"}
-          frameProcessor={
-            livePaused || scanning || Boolean(result)
-              ? undefined
-              : frameProcessor
-          }
-          pixelFormat="yuv"
-          onInitialized={() => setIsCameraReady(true)}
-          onLayout={(e: LayoutChangeEvent) =>
-            setViewSize({
-              width: e.nativeEvent.layout.width,
-              height: e.nativeEvent.layout.height,
-            })
-          }
-        />
-      )}
+      <View style={styles.cameraContainer}>
+        {capturedPhoto ? (
+          <Image
+            source={{ uri: capturedPhoto.uri }}
+            style={styles.camera}
+            resizeMode="cover"
+            onLayout={(e: LayoutChangeEvent) =>
+              setViewSize({
+                width: e.nativeEvent.layout.width,
+                height: e.nativeEvent.layout.height,
+              })
+            }
+          />
+        ) : (
+          <Camera
+            ref={cameraRef}
+            style={styles.camera}
+            device={device}
+            isActive={true}
+            photo={true}
+            video={true}
+            outputOrientation="preview"
+            torch={torch ? "on" : "off"}
+            frameProcessor={
+              livePaused || scanning || Boolean(result)
+                ? undefined
+                : frameProcessor
+            }
+            pixelFormat="yuv"
+            onInitialized={() => setIsCameraReady(true)}
+            onLayout={(e: LayoutChangeEvent) =>
+              setViewSize({
+                width: e.nativeEvent.layout.width,
+                height: e.nativeEvent.layout.height,
+              })
+            }
+          />
+        )}
+      </View>
 
       {/* ── Bounding boxes ── */}
       {result && resultOverlayBounds ? (
@@ -804,10 +818,10 @@ export default function ScannerScreen() {
           <Pressable
             style={[
               styles.shutterBtn,
-              !isCameraReady && styles.shutterDisabled,
+              (!isCameraReady || isCapturingFrame) && styles.shutterDisabled,
             ]}
             onPress={handleCapture}
-            disabled={!isCameraReady}
+            disabled={!isCameraReady || isCapturingFrame}
             accessibilityRole="button"
             accessibilityLabel="Capture and classify item"
           >
@@ -821,6 +835,7 @@ export default function ScannerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
+  cameraContainer: { flex: 1 },
   camera: { flex: 1 },
 
   // ── Top bar ──────────────────────────────────────────────────────────────

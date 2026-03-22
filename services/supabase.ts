@@ -1,23 +1,23 @@
 import type {
-    AccessibilityMode,
-    FriendProfile,
-    FriendRequest,
-    FriendsData,
-    LeaderboardEntry,
-    QuickTipRecord,
-    RecycledItemRecord,
-    ScanResult,
-    UserProfile,
+  AccessibilityMode,
+  FriendProfile,
+  FriendRequest,
+  FriendsData,
+  LeaderboardEntry,
+  QuickTipRecord,
+  RecycledItemRecord,
+  ScanResult,
+  UserProfile,
 } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient, type Session, type User } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
 import {
-    getQuickTipsHistory as getLocalQuickTipsHistory,
-    getRecycledHistory as getLocalRecycledHistory,
-    saveQuickTipHistory as saveLocalQuickTipHistory,
-    saveRecycledHistory as saveLocalRecycledHistory,
+  getQuickTipsHistory as getLocalQuickTipsHistory,
+  getRecycledHistory as getLocalRecycledHistory,
+  saveQuickTipHistory as saveLocalQuickTipHistory,
+  saveRecycledHistory as saveLocalRecycledHistory,
 } from "./history";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -90,12 +90,58 @@ function getCurrentMonthStartIso() {
 
 const SCAN_TIME_COLUMNS = ["created_at", "scanned_at", "timestamp"] as const;
 
+function extractMissingScanColumnName(error: any): string | null {
+  const message = typeof error?.message === "string" ? error.message : "";
+
+  if (error?.code === "42703") {
+    const match = message.match(
+      /column scans\.([a-zA-Z0-9_]+) does not exist/i,
+    );
+    return match?.[1] ?? null;
+  }
+
+  if (error?.code === "PGRST204") {
+    const match = message.match(
+      /Could not find the '([^']+)' column of 'scans'/i,
+    );
+    return match?.[1] ?? null;
+  }
+
+  return null;
+}
+
 function isMissingScanColumnError(error: any, column: string) {
-  return (
-    error?.code === "42703" &&
-    typeof error?.message === "string" &&
-    error.message.includes(`column scans.${column} does not exist`)
-  );
+  return extractMissingScanColumnName(error) === column;
+}
+
+async function tryInsertScanPayload(
+  payload: Record<string, unknown>,
+  preservedColumns: string[] = [],
+): Promise<"inserted" | "retry-next-payload"> {
+  if (!supabase) {
+    return "inserted";
+  }
+
+  const nextPayload: Record<string, unknown> = { ...payload };
+
+  while (true) {
+    const { error } = await supabase.from("scans").insert(nextPayload);
+
+    if (!error) {
+      return "inserted";
+    }
+
+    const missingColumn = extractMissingScanColumnName(error);
+    if (!missingColumn || !(missingColumn in nextPayload)) {
+      throw error;
+    }
+
+    if (preservedColumns.includes(missingColumn)) {
+      return "retry-next-payload";
+    }
+
+    delete nextPayload[missingColumn];
+  }
 }
 
 async function getScanRowsForUsers(
@@ -141,7 +187,7 @@ async function insertScanRow(result: ScanResult, userId: string) {
     return;
   }
 
-  const basePayload = {
+  const basePayload: Record<string, unknown> = {
     user_id: userId,
     item: result.item,
     bin_type: result.binType,
@@ -152,25 +198,25 @@ async function insertScanRow(result: ScanResult, userId: string) {
   const timestampIso = new Date(result.timestamp).toISOString();
 
   for (const column of SCAN_TIME_COLUMNS) {
-    const { error } = await supabase.from("scans").insert({
-      ...basePayload,
-      [column]: timestampIso,
-    });
+    const insertResult = await tryInsertScanPayload(
+      {
+        ...basePayload,
+        [column]: timestampIso,
+      },
+      [column],
+    );
 
-    if (!error) {
+    if (insertResult === "inserted") {
       return;
     }
-
-    if (!isMissingScanColumnError(error, column)) {
-      throw error;
-    }
   }
 
-  const { error } = await supabase.from("scans").insert(basePayload);
-
-  if (error) {
-    throw error;
+  const insertResult = await tryInsertScanPayload(basePayload);
+  if (insertResult === "inserted") {
+    return;
   }
+
+  throw new Error("Unable to save scan result with the current scans schema.");
 }
 
 function applyLeaderboardRanks(

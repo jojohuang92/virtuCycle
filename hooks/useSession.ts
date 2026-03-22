@@ -1,24 +1,25 @@
 import {
-  getDemoSession,
-  getProfile,
-  getSession,
-  supabase,
-  updateProfileSettings,
+    getDemoSession,
+    getProfile,
+    getSession,
+    supabase,
+    updateProfileSettings,
 } from "@/services/supabase";
 import type { AccessibilityMode, UserProfile } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session, User } from "@supabase/supabase-js";
 import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
 } from "react";
 
 const TTS_KEY = "@virtucycle_tts_enabled";
 const AVATAR_KEY = "@virtucycle_avatar_url";
+const DEFAULT_TTS_ENABLED = false;
 
 type SessionContextValue = {
   session: Session | null;
@@ -35,19 +36,26 @@ type SessionContextValue = {
   }) => Promise<void>;
 };
 
-const SessionContext = createContext<SessionContextValue | undefined>(undefined);
+const SessionContext = createContext<SessionContextValue | undefined>(
+  undefined,
+);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [ttsEnabled, setTtsEnabled] = useState(DEFAULT_TTS_ENABLED);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(TTS_KEY).then((val) => {
-      if (val !== null) setTtsEnabled(val === "true");
+      if (val !== null) {
+        setTtsEnabled(val === "true");
+        return;
+      }
+
+      AsyncStorage.setItem(TTS_KEY, String(DEFAULT_TTS_ENABLED));
     });
     AsyncStorage.getItem(AVATAR_KEY).then((val) => {
       if (val) setLocalAvatarUrl(val);
@@ -106,7 +114,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (nextUser) {
         setUser(nextUser);
         setSession((currentSession) =>
-          currentSession ? { ...currentSession, user: nextUser } : currentSession,
+          currentSession
+            ? { ...currentSession, user: nextUser }
+            : currentSession,
         );
       }
     } catch (error) {
@@ -172,7 +182,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       refreshProfile,
       saveProfile,
     }),
-    [session, user, profileWithAvatar, loading, ttsEnabled, toggleTTS, cacheAvatarUrl],
+    [
+      session,
+      user,
+      profileWithAvatar,
+      loading,
+      ttsEnabled,
+      toggleTTS,
+      cacheAvatarUrl,
+    ],
   );
 
   return React.createElement(SessionContext.Provider, { value }, children);
