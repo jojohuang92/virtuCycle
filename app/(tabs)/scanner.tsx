@@ -10,6 +10,7 @@ import {
   type VisionDetectedObject,
 } from "@/services/visionObjectDetection";
 import { Ionicons } from "@expo/vector-icons";
+import * as Speech from "expo-speech";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -219,7 +220,7 @@ export default function ScannerScreen() {
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
 
-  const { user } = useSession();
+  const { toggleTTS, ttsEnabled, user } = useSession();
   const { rules } = useRecyclingRules();
   const { settings: accessibility } = useAccessibility();
   const { result, bounds, scanning, stage, error, scan, reset } = useScanner(
@@ -328,6 +329,13 @@ export default function ScannerScreen() {
     setCapturedDetection(null);
     sheetTranslateY.setValue(0);
     reset();
+  };
+
+  const handleToggleTTS = () => {
+    if (ttsEnabled) {
+      Speech.stop();
+    }
+    toggleTTS();
   };
 
   const dismissSheet = () => {
@@ -600,17 +608,33 @@ export default function ScannerScreen() {
           <Text style={styles.liveText}>LIVE DETECTION</Text>
         </View>
 
-        <Pressable
-          style={styles.topBtn}
-          onPress={() => setTorch((t) => !t)}
-          accessibilityLabel="Toggle torch"
-        >
-          <Ionicons
-            name={torch ? "flash" : "flash-outline"}
-            size={20}
-            color="#fff"
-          />
-        </Pressable>
+        <View style={styles.topActions}>
+          <Pressable
+            style={styles.topBtn}
+            onPress={handleToggleTTS}
+            accessibilityLabel={
+              ttsEnabled ? "Mute spoken guidance" : "Unmute spoken guidance"
+            }
+          >
+            <Ionicons
+              name={ttsEnabled ? "volume-high-outline" : "volume-mute-outline"}
+              size={20}
+              color="#fff"
+            />
+          </Pressable>
+
+          <Pressable
+            style={styles.topBtn}
+            onPress={() => setTorch((t) => !t)}
+            accessibilityLabel="Toggle torch"
+          >
+            <Ionicons
+              name={torch ? "flash" : "flash-outline"}
+              size={20}
+              color="#fff"
+            />
+          </Pressable>
+        </View>
       </SafeAreaView>
 
       {/* ── Viewfinder corner brackets (idle only) ── */}
@@ -739,6 +763,11 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  topActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   liveBadge: {
     flexDirection: "row",
