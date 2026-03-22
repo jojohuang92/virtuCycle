@@ -50,6 +50,40 @@ function toKeywords(value: string): string[] {
     );
 }
 
+function scoreRuleMatch(label: string, entry: string): number {
+  const normalizedLabel = normalizeText(label);
+  const normalizedEntry = normalizeText(entry);
+  const labelKeywords = toKeywords(label);
+  const entryKeywords = toKeywords(entry);
+
+  if (!normalizedLabel || !normalizedEntry) {
+    return 0;
+  }
+
+  if (normalizedLabel === normalizedEntry) {
+    return 1;
+  }
+
+  if (
+    normalizedLabel.includes(normalizedEntry) ||
+    normalizedEntry.includes(normalizedLabel)
+  ) {
+    return 0.92;
+  }
+
+  const overlapCount = labelKeywords.filter((keyword) =>
+    entryKeywords.includes(keyword),
+  ).length;
+
+  if (!overlapCount) {
+    return 0;
+  }
+
+  const keywordCoverage = overlapCount / Math.max(labelKeywords.length, 1);
+  const entryCoverage = overlapCount / Math.max(entryKeywords.length, 1);
+  return keywordCoverage * 0.65 + entryCoverage * 0.35;
+}
+
 function normalizeBounds(
   bounds: Bounds | undefined,
   photoWidth: number,
@@ -74,28 +108,27 @@ function matchLabelToRules(
   label: string,
   rules: RecyclingRules,
 ): BinType | null {
-  const normalizedLabel = normalizeText(label);
-  const labelKeywords = toKeywords(label);
+  const categories: Array<[BinType, string[]]> = [
+    ["recycling", rules.recycling],
+    ["trash", rules.trash],
+    ["compost", rules.compost],
+    ["hazardous", rules.hazardous],
+  ];
 
-  const matchesEntry = (entry: string) => {
-    const normalizedEntry = normalizeText(entry);
-    if (
-      normalizedLabel.includes(normalizedEntry) ||
-      normalizedEntry.includes(normalizedLabel)
-    ) {
-      return true;
+  let bestMatch: { binType: BinType; score: number } | null = null;
+
+  for (const [binType, entries] of categories) {
+    const score = entries.reduce(
+      (highest, entry) => Math.max(highest, scoreRuleMatch(label, entry)),
+      0,
+    );
+
+    if (!bestMatch || score > bestMatch.score) {
+      bestMatch = { binType, score };
     }
+  }
 
-    const entryKeywords = toKeywords(entry);
-    return labelKeywords.some((keyword) => entryKeywords.includes(keyword));
-  };
-
-  if (rules.recycling.some(matchesEntry)) return "recycling";
-  if (rules.trash.some(matchesEntry)) return "trash";
-  if (rules.compost.some(matchesEntry)) return "compost";
-  if (rules.hazardous.some(matchesEntry)) return "hazardous";
-
-  return null;
+  return bestMatch && bestMatch.score >= 0.5 ? bestMatch.binType : null;
 }
 
 async function fireFeedback(

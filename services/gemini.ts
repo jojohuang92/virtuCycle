@@ -11,13 +11,11 @@ const RULES_RESPONSE_SCHEMA = {
   properties: {
     city: { type: "STRING" },
     state: { type: "STRING" },
-    fetchedAt: { type: "NUMBER" },
     recycling: { type: "ARRAY", items: { type: "STRING" } },
     trash: { type: "ARRAY", items: { type: "STRING" } },
     compost: { type: "ARRAY", items: { type: "STRING" } },
     hazardous: { type: "ARRAY", items: { type: "STRING" } },
     notes: { type: "STRING" },
-    source: { type: "STRING" },
   },
   required: [
     "city",
@@ -27,7 +25,6 @@ const RULES_RESPONSE_SCHEMA = {
     "compost",
     "hazardous",
     "notes",
-    "source",
   ],
 } as const;
 

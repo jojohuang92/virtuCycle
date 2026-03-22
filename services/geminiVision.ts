@@ -20,19 +20,8 @@ const GEMINI_VISION_RESPONSE_SCHEMA = {
     },
     confidence: { type: "NUMBER" },
     explanation: { type: "STRING" },
-    source: { type: "STRING" },
-    bounds: {
-      type: "OBJECT",
-      properties: {
-        x: { type: "NUMBER" },
-        y: { type: "NUMBER" },
-        width: { type: "NUMBER" },
-        height: { type: "NUMBER" },
-      },
-      required: ["x", "y", "width", "height"],
-    },
   },
-  required: ["item", "binType", "confidence", "explanation", "source"],
+  required: ["item", "binType", "confidence", "explanation"],
 } as const;
 
 async function compressImage(uri: string): Promise<string> {
@@ -114,21 +103,6 @@ function isScanResultPayload(
   );
 }
 
-function clampNormalizedBounds(
-  bounds?: ScanResult["bounds"],
-): ScanResult["bounds"] | undefined {
-  if (!bounds) {
-    return undefined;
-  }
-
-  return {
-    x: Math.max(0, Math.min(1, bounds.x)),
-    y: Math.max(0, Math.min(1, bounds.y)),
-    width: Math.max(0, Math.min(1, bounds.width)),
-    height: Math.max(0, Math.min(1, bounds.height)),
-  };
-}
-
 function extractJson(text: string): Omit<ScanResult, "timestamp"> | null {
   try {
     const json = extractBalancedJson(text);
@@ -187,7 +161,7 @@ Local rules:
 - Hazardous: ${rules.hazardous.join(", ")}
 - Notes: ${rules.notes}
 
-Identify the main item in the image and choose the correct disposal bin using the local rules. Also locate the item with a normalized bounding box relative to image width and height. Return JSON only with a short explanation that names the target bin.`;
+Identify the main item in the image and choose the correct disposal bin using the local rules. Return only compact JSON with these fields: item, binType, confidence, explanation. Keep the explanation to one short sentence.`;
 
     const response = await fetch(GEMINI_VISION_URL, {
       method: "POST",
@@ -264,7 +238,6 @@ Identify the main item in the image and choose the correct disposal bin using th
       ...parsed,
       binType,
       source: "gemini",
-      bounds: clampNormalizedBounds(parsed.bounds),
       timestamp: Date.now(),
     };
   } catch (error) {
