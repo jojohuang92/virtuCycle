@@ -17,8 +17,10 @@ export interface ScanResult {
   binType: BinType;
   confidence: number;
   explanation: string;
-  source: "mlkit" | "claude" | "fallback";
+  source: "mlkit" | "gemini" | "claude" | "fallback";
   timestamp: number;
+  /** Normalized bounding box (0–1 relative to image dimensions) */
+  bounds?: { x: number; y: number; width: number; height: number };
 }
 
 export interface UserProfile {
