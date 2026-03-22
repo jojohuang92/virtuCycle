@@ -3,6 +3,7 @@ import { Radii, Spacing } from "@/constants/Colors";
 import { FontFamily, TypeScale } from "@/constants/typography";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSession } from "@/hooks/useSession";
+import { useVoiceCommands } from "@/hooks/useVoiceCommands";
 import { generateQuickTip, getRecyclingRules } from "@/services/gemini";
 import { getUserLocation } from "@/services/location";
 import {
@@ -17,6 +18,7 @@ import type {
   RecycledItemRecord,
 } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
+import * as Speech from "expo-speech";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -239,6 +241,105 @@ export default function DashboardScreen() {
         ? "You are leading this month"
         : `${scanGap} scan${scanGap === 1 ? "" : "s"} behind #1`;
 
+  const voiceCommands = useMemo(() => [
+    {
+      phrases: ["scanner", "scan", "camera", "scan something"],
+      action: () => router.push("/(tabs)/scanner"),
+      announcement: "Opening scanner",
+    },
+    {
+      phrases: ["profile", "account", "my profile"],
+      action: () => router.push("/(tabs)/profile"),
+      announcement: "Opening profile",
+    },
+    {
+      phrases: ["history", "recycled", "recycled history", "my history"],
+      action: () => router.push("/(tabs)/recycled-history"),
+      announcement: "Opening recycled history",
+    },
+    {
+      phrases: ["tips", "quick tips", "tip"],
+      action: () => router.push("/(tabs)/quick-tips"),
+      announcement: "Opening quick tips",
+    },
+    {
+      phrases: ["read stats", "my stats", "stats", "how am i doing"],
+      action: () => {
+        const co2 = profile?.co2SavedKg?.toFixed(1) ?? "0";
+        const scans = currentUserScanTotal;
+        const rank = rankingPrimaryText;
+        Speech.speak(
+          `You have saved ${co2} kilograms of C O 2. You have scanned ${scans} items this month. Your friend ranking is ${rank}.`,
+        );
+      },
+      announcement: "Reading your stats",
+    },
+    {
+      phrases: ["read tip", "read tips", "what is the tip", "today's tip"],
+      action: () => {
+        const tip = currentQuickTip?.text ?? "No tip available yet. Pull to refresh for a fresh recycling tip.";
+        Speech.speak(tip);
+      },
+      announcement: "Reading your tip",
+    },
+    {
+      phrases: ["read leaderboard", "leaderboard", "friends ranking", "who is winning"],
+      action: () => {
+        if (leaderboard.length === 0) {
+          Speech.speak("You have no friends added yet. Add friends to compare scan totals.");
+          return;
+        }
+        const lines = leaderboard
+          .slice(0, 5)
+          .map((e) => `Number ${e.rank}: ${e.displayName}${e.isCurrentUser ? ", that's you," : ","} with ${e.scansThisMonth} scans.`);
+        Speech.speak(lines.join(" "));
+      },
+      announcement: "Reading leaderboard",
+    },
+    {
+      phrases: ["read history", "recent items", "what did i recycle"],
+      action: () => {
+        if (recycledHistory.length === 0) {
+          Speech.speak("You have no recycled items yet. Scan something to get started.");
+          return;
+        }
+        const lines = recycledHistory.map(
+          (item) => `${item.item}, placed in the ${BIN_CONFIG[item.binType].label}.`,
+        );
+        Speech.speak(`Your recent recycled items: ${lines.join(" ")}`);
+      },
+      announcement: "Reading recent history",
+    },
+    {
+      phrases: ["help", "what can i say", "commands", "voice commands"],
+      action: () => {
+        Speech.speak(
+          "You can say: scanner, profile, history, tips, read stats, read tip, read leaderboard, read history, or help.",
+        );
+      },
+      announcement: "Here are your voice commands",
+    },
+  ], [router, profile, currentUserScanTotal, rankingPrimaryText, currentQuickTip, leaderboard, recycledHistory]);
+
+  const isAccessibilityMode = profile?.email === "accessibility@virtucycle.guest";
+  const voiceOptions = useMemo(
+    () => ({ continuous: isAccessibilityMode }),
+    [isAccessibilityMode],
+  );
+  const { listening, start: startVoice, stop: stopVoice } = useVoiceCommands(
+    voiceCommands,
+    ttsEnabled,
+    voiceOptions,
+  );
+
+  // Auto-start voice when in accessibility mode
+  useEffect(() => {
+    if (isAccessibilityMode) {
+      void startVoice();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAccessibilityMode]);
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       {/* Header */}
@@ -257,6 +358,17 @@ export default function DashboardScreen() {
           <Text style={styles.appName}>VirtuCycle</Text>
         </View>
         <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={[styles.iconBtn, listening && styles.iconBtnActive]}
+            accessibilityLabel={listening ? "Stop voice commands" : "Start voice commands"}
+            onPress={listening ? stopVoice : startVoice}
+          >
+            <Ionicons
+              name={listening ? "mic" : "mic-outline"}
+              size={22}
+              color={listening ? colors.onPrimary : colors.primary}
+            />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.iconBtn, ttsEnabled && styles.iconBtnActive]}
             accessibilityLabel={

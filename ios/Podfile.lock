@@ -107,6 +107,8 @@ PODS:
     - ExpoModulesCore
   - ExpoSpeech (55.0.9):
     - ExpoModulesCore
+  - ExpoSpeechRecognition (3.1.2):
+    - ExpoModulesCore
   - ExpoSplashScreen (55.0.12):
     - ExpoModulesCore
   - ExpoSymbols (55.0.5):
@@ -2344,9 +2346,6 @@ PODS:
   - SDWebImageWebPCoder (0.14.6):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
-  - VirtuCycleObjectDetectionFrameProcessor (1.0.0):
-    - GoogleMLKit/ObjectDetection
-    - VisionCamera
   - VisionCamera (4.7.3):
     - VisionCamera/Core (= 4.7.3)
     - VisionCamera/FrameProcessors (= 4.7.3)
@@ -2442,6 +2441,7 @@ DEPENDENCIES:
   - ExpoRouter (from `../node_modules/expo-router/ios`)
   - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
   - ExpoSpeech (from `../node_modules/expo-speech/ios`)
+  - ExpoSpeechRecognition (from `../node_modules/expo-speech-recognition/ios`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
@@ -2526,7 +2526,6 @@ DEPENDENCIES:
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
-  - VirtuCycleObjectDetectionFrameProcessor (from `../native/VirtuCycleObjectDetectionFrameProcessor`)
   - VisionCamera (from `../node_modules/react-native-vision-camera`)
   - VisionCameraMLKit (from `../node_modules/react-native-vision-camera-mlkit`)
   - VisionCameraObjectDetection (from `../node_modules/react-native-vision-camera-object-detection`)
@@ -2616,6 +2615,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-secure-store/ios"
   ExpoSpeech:
     :path: "../node_modules/expo-speech/ios"
+  ExpoSpeechRecognition:
+    :path: "../node_modules/expo-speech-recognition/ios"
   ExpoSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
   ExpoSymbols:
@@ -2783,8 +2784,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-screens"
   RNWorklets:
     :path: "../node_modules/react-native-worklets"
-  VirtuCycleObjectDetectionFrameProcessor:
-    :path: "../native/VirtuCycleObjectDetectionFrameProcessor"
   VisionCamera:
     :path: "../node_modules/react-native-vision-camera"
   VisionCameraMLKit:
@@ -2820,6 +2819,7 @@ SPEC CHECKSUMS:
   ExpoRouter: 2bef44d037beb8ba5a325ec9e9ab870bc7dd96a9
   ExpoSecureStore: 83d31183fecaae7a084e88e29d14d5a02d90882a
   ExpoSpeech: 8a4d6d6fd3e41f2e0a8a8d3a17e37fc6dc31f680
+  ExpoSpeechRecognition: 3e416e568451e62678e8085469bcaff557b0b2b9
   ExpoSplashScreen: 755302759fbcf4af56b8ad5fb76e535dcf812f91
   ExpoSymbols: 3d67a96643245a5d933ce7fbf535f95eb541f617
   ExpoWebBrowser: 04fdc3b0619d6708f931a9d0f8850903cc38d896
@@ -2830,7 +2830,7 @@ SPEC CHECKSUMS:
   GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
   GoogleUtilitiesComponents: 679b2c881db3b615a2777504623df6122dd20afe
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
-  hermes-engine: 4df59e37f89081a675ab6eec09bd614b08f06c36
+  hermes-engine: 343a8917c1108d975c443df53152e1baf474d87c
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
@@ -2858,7 +2858,7 @@ SPEC CHECKSUMS:
   React: f4edc7518ccb0b54a6f580d89dd91471844b4990
   React-callinvoker: 79ef4e3f1c021571f6d2dafbe45ca432b2f3a146
   React-Core: c19ad4660fd48bc8abc060d979f8ee37f1fc4a5a
-  React-Core-prebuilt: 6f87552b3b2d7295c1d5ee52cde130ecdf6a5a01
+  React-Core-prebuilt: adc884a77ad731c4ec325c5a44be5a46b0716e38
   React-CoreModules: f94ec3ee2bac588d033ad15a2377af746284f8c8
   React-cxxreact: de66364f2d5fb77d3da3cfa927b2fd960892c711
   React-debug: 4f6739c820d7da9c20f48caa985573b6a847e5f5
@@ -2921,7 +2921,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: d69159b417e8c9d82b8fe4d0a27def4c3e8f767f
   ReactCodegen: e67cb698a2107da1da9efa55174861d724666a3e
   ReactCommon: 8868269b67561136a7970be188b40738135af077
-  ReactNativeDependencies: 4940ea57379fc574b0ff60cb2409e2fdb95f78bc
+  ReactNativeDependencies: 15963581ee466f2cb0d6d7af21f0ea8af30b5397
   RNCAsyncStorage: 3a4f5e2777dae1688b781a487923a08569e27fe4
   RNMLKitCore: f350dbced62ddfcf843e6247365e540e7f1131aa
   RNMLKitObjectDetection: 057e9cffe57f03dfcd265bc5250377e92685ce0d
@@ -2932,13 +2932,12 @@ SPEC CHECKSUMS:
   SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
   SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
-  VirtuCycleObjectDetectionFrameProcessor: 51e2a1a51b213b622b274c8cc20c6ba836409071
   VisionCamera: 0044a94f7489f19e19d5938e97dfc36f4784af3c
   VisionCameraMLKit: fbeeb55d0af5112e019dc03d4a1a8f50e3480bcf
   VisionCameraObjectDetection: 9e8c4ca343120b5e6b14dd976a08738695f272da
   Yoga: dd994d8c85dca5cc9b10f5df8c01f9ef1d0da191
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 59d0f0ff5e49bbb1e18704166be6b05faf6545f7
+PODFILE CHECKSUM: cfd33f9a6ae307a737af18aa8b4fa5c82dcbc5e6
 
 COCOAPODS: 1.16.2

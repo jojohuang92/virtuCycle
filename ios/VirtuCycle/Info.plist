@@ -28,7 +28,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>virtucycle</string>
-				<string>com.johuang92us.VirtuCycle</string>
+				<string>com.virtucycle.app</string>
 			</array>
 		</dict>
 	</array>
@@ -57,12 +57,20 @@
 	<string>Allow $(PRODUCT_NAME) to access your location</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to access your microphone</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Allow $(PRODUCT_NAME) to use speech recognition for hands-free navigation</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allow $(PRODUCT_NAME) to access your photos</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
 	</array>
 	<key>RCTNewArchEnabled</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>SplashScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>

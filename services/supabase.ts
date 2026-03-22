@@ -322,11 +322,8 @@ export async function signUpWithEmail(
 }
 
 export async function signOut() {
-  if (!supabase) {
-    await AsyncStorage.removeItem("virtucycle_demo_user");
-    return;
-  }
-
+  await AsyncStorage.removeItem("virtucycle_demo_user");
+  if (!supabase) return;
   await supabase.auth.signOut();
 }
 

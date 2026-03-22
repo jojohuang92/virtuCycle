@@ -5,6 +5,7 @@ import { useAccessibility } from "@/hooks/useAccessibility";
 import { useRecyclingRules } from "@/hooks/useRecyclingRules";
 import { useScanner } from "@/hooks/useScanner";
 import { useSession } from "@/hooks/useSession";
+import { useVoiceCommands } from "@/hooks/useVoiceCommands";
 import { recordRecycledItem } from "@/services/supabase";
 import {
   createDetectObjectsPlugin,
@@ -12,7 +13,8 @@ import {
 } from "@/services/visionObjectDetection";
 import { Ionicons } from "@expo/vector-icons";
 import * as Speech from "expo-speech";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -261,7 +263,8 @@ export default function ScannerScreen() {
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
 
-  const { refreshProfile, toggleTTS, ttsEnabled, user } = useSession();
+  const router = useRouter();
+  const { refreshProfile, toggleTTS, ttsEnabled, user, profile } = useSession();
   const { rules } = useRecyclingRules();
   const { settings: accessibility } = useAccessibility();
   const { result, bounds, scanning, stage, error, scan, reset } = useScanner(
@@ -270,7 +273,13 @@ export default function ScannerScreen() {
     ttsEnabled,
     user?.id,
   );
-  const detectionPlugin = useMemo(() => createDetectObjectsPlugin(), []);
+  const detectionPlugin = useMemo(() => {
+    try {
+      return createDetectObjectsPlugin();
+    } catch {
+      return null;
+    }
+  }, []);
 
   const publishDetections = useMemo(
     () =>
@@ -315,6 +324,8 @@ export default function ScannerScreen() {
   const frameProcessor = useFrameProcessor(
     (frame) => {
       "worklet";
+
+      if (!detectionPlugin) return;
 
       runAtTargetFps(LIVE_FRAME_PROCESSOR_FPS, () => {
         "worklet";
@@ -538,6 +549,72 @@ export default function ScannerScreen() {
     }
   };
 
+  const handleCaptureVoice = useCallback(() => {
+    void handleCapture();
+  }, [handleCapture]);
+
+  const voiceCommands = useMemo(() => [
+    {
+      phrases: ["capture", "scan", "take photo", "scan it", "identify"],
+      action: handleCaptureVoice,
+      announcement: "Capturing",
+    },
+    {
+      phrases: ["recycle", "confirm", "i recycled this", "done"],
+      action: () => { void handleConfirmRecycle(); },
+      announcement: "Confirming recycle",
+    },
+    {
+      phrases: ["reset", "scan again", "try again", "clear"],
+      action: handleReset,
+      announcement: "Resetting",
+    },
+    {
+      phrases: ["read result", "what is this", "what did you find", "result"],
+      action: () => {
+        if (!result) {
+          Speech.speak("No scan result yet. Say capture to scan an item.");
+          return;
+        }
+        const bin = BIN_CONFIG[result.binType];
+        Speech.speak(
+          `${result.item}. Place it in the ${bin.label}. ${result.explanation}`,
+        );
+      },
+      announcement: "Reading result",
+    },
+    {
+      phrases: ["dashboard", "home", "go home"],
+      action: () => router.push("/(tabs)/dashboard"),
+      announcement: "Opening dashboard",
+    },
+    {
+      phrases: ["help", "what can i say", "commands"],
+      action: () => {
+        Speech.speak(
+          "You can say: capture, recycle, reset, read result, dashboard, or help.",
+        );
+      },
+      announcement: "Here are your voice commands",
+    },
+  ], [handleCaptureVoice, handleConfirmRecycle, handleReset, result, router]);
+
+  const isAccessibilityMode = profile?.email === "accessibility@virtucycle.guest";
+  const voiceOptions = useMemo(
+    () => ({ continuous: isAccessibilityMode }),
+    [isAccessibilityMode],
+  );
+  const { listening: voiceListening, start: startVoice, stop: stopVoice } =
+    useVoiceCommands(voiceCommands, ttsEnabled, voiceOptions);
+
+  // Auto-start voice when in accessibility mode
+  useEffect(() => {
+    if (isAccessibilityMode) {
+      void startVoice();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAccessibilityMode]);
+
   if (!device) {
     return (
       <View style={styles.centered}>
@@ -601,7 +678,7 @@ export default function ScannerScreen() {
             outputOrientation="preview"
             torch={torch ? "on" : "off"}
             frameProcessor={
-              livePaused || scanning || Boolean(result)
+              livePaused || scanning || Boolean(result) || !detectionPlugin
                 ? undefined
                 : frameProcessor
             }
@@ -678,6 +755,18 @@ export default function ScannerScreen() {
         </View>
 
         <View style={styles.topActions}>
+          <Pressable
+            style={[styles.topBtn, voiceListening && styles.topBtnActive]}
+            onPress={voiceListening ? stopVoice : startVoice}
+            accessibilityLabel={voiceListening ? "Stop voice commands" : "Start voice commands"}
+          >
+            <Ionicons
+              name={voiceListening ? "mic" : "mic-outline"}
+              size={20}
+              color="#fff"
+            />
+          </Pressable>
+
           <Pressable
             style={styles.topBtn}
             onPress={handleToggleTTS}
@@ -859,6 +948,10 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  topBtnActive: {
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderColor: "rgba(255,255,255,0.6)",
   },
   topActions: {
     flexDirection: "row",

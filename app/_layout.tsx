@@ -85,11 +85,14 @@ function RootLayoutContent() {
 
     const inAuthGroup = segments[0] === "(auth)";
 
-    if (!isSignedIn && !inAuthGroup) {
-      router.replace("/(auth)/login");
-    } else if (isSignedIn && inAuthGroup) {
-      router.replace("/(tabs)/dashboard");
-    }
+    getDemoSession().then((demo) => {
+      const effectivelySignedIn = isSignedIn || Boolean(demo);
+      if (!effectivelySignedIn && !inAuthGroup) {
+        router.replace("/(auth)/login");
+      } else if (effectivelySignedIn && inAuthGroup) {
+        router.replace("/(tabs)/dashboard");
+      }
+    });
   }, [authResolved, isSignedIn, fontsLoaded, segments]);
 
   // Hide splash once everything is ready

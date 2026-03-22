@@ -74,9 +74,12 @@ export default function LoginScreen() {
             styles.ttsControl,
             pressed && styles.ttsControlPressed,
           ]}
-          onPress={() => {}}
+          onPress={async () => {
+            await storeDemoSession("accessibility@virtucycle.guest");
+            router.replace("/(tabs)/scanner");
+          }}
           accessibilityRole="button"
-          accessibilityLabel="Open accessibility mode"
+          accessibilityLabel="Open accessibility mode — go directly to scanner"
         >
           <View style={styles.ttsIconWrap}>
             <Ionicons name="accessibility" size={20} color={colors.primary} />
