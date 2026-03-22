@@ -6,30 +6,30 @@ import { useRecyclingRules } from "@/hooks/useRecyclingRules";
 import { useScanner } from "@/hooks/useScanner";
 import { useSession } from "@/hooks/useSession";
 import {
-    createDetectObjectsPlugin,
-    type VisionDetectedObject,
+  createDetectObjectsPlugin,
+  type VisionDetectedObject,
 } from "@/services/visionObjectDetection";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    Image,
-    LayoutChangeEvent,
-    PanResponder,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Animated,
+  Image,
+  LayoutChangeEvent,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    Camera,
-    runAtTargetFps,
-    useCameraDevice,
-    useCameraPermission,
-    useFrameProcessor,
-    type Orientation,
+  Camera,
+  runAtTargetFps,
+  useCameraDevice,
+  useCameraPermission,
+  useFrameProcessor,
+  type Orientation,
 } from "react-native-vision-camera";
 import { Worklets } from "react-native-worklets-core";
 

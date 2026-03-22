@@ -1,9 +1,15 @@
-import { Colors, Radii, Spacing } from "@/constants/Colors";
+import { Radii, Spacing } from "@/constants/Colors";
 import { FontFamily, TypeScale } from "@/constants/typography";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSession } from "@/hooks/useSession";
+import { getFriendsLeaderboard } from "@/services/supabase";
+import type { LeaderboardEntry } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,8 +36,40 @@ const RECENT_ITEMS = [
 ];
 
 export default function DashboardScreen() {
-  const { profile } = useSession();
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { profile, user, ttsEnabled, toggleTTS } = useSession();
   const firstName = profile?.displayName?.split(" ")[0] ?? null;
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLeaderboard() {
+      try {
+        setLeaderboardLoading(true);
+        const nextLeaderboard = await getFriendsLeaderboard(user, profile);
+
+        if (active) {
+          setLeaderboard(nextLeaderboard);
+        }
+      } finally {
+        if (active) {
+          setLeaderboardLoading(false);
+        }
+      }
+    }
+
+    void loadLeaderboard();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id, profile?.id, profile?.scansThisMonth, profile?.displayName]);
+
+  const currentUserRank =
+    leaderboard.find((entry) => entry.isCurrentUser)?.rank ?? leaderboard.length;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -39,29 +77,24 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={20} color={Colors.primary} />
+            {profile?.avatarUrl ? (
+              <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="person" size={20} color={colors.primary} />
+            )}
           </View>
           <Text style={styles.appName}>VirtuCycle</Text>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={styles.iconBtn}
-            accessibilityLabel="Accessibility mode"
+            style={[styles.iconBtn, ttsEnabled && styles.iconBtnActive]}
+            accessibilityLabel={ttsEnabled ? "Mute voice announcements" : "Enable voice announcements"}
+            onPress={toggleTTS}
           >
             <Ionicons
-              name="accessibility-outline"
+              name={ttsEnabled ? "volume-high-outline" : "volume-mute-outline"}
               size={22}
-              color={Colors.primary}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconBtn}
-            accessibilityLabel="Notifications"
-          >
-            <Ionicons
-              name="notifications-outline"
-              size={22}
-              color={Colors.primary}
+              color={ttsEnabled ? colors.onPrimary : colors.primary}
             />
           </TouchableOpacity>
         </View>
@@ -85,12 +118,12 @@ export default function DashboardScreen() {
         {/* Scan CTA */}
         <TouchableOpacity activeOpacity={0.88} style={styles.scanWrapper}>
           <LinearGradient
-            colors={[Colors.primary, Colors.primaryContainer]}
+            colors={[colors.primary, colors.primaryContainer]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.scanButton}
           >
-            <Ionicons name="scan-outline" size={40} color={Colors.onPrimary} />
+            <Ionicons name="scan-outline" size={40} color={colors.onPrimary} />
             <Text style={styles.scanText}> New Scan</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -122,7 +155,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="barcode-outline"
                   size={28}
-                  color={Colors.primary}
+                  color={colors.primary}
                 />
                 <View style={styles.percentBadge}>
                   <Text style={styles.percentBadgeText}>+12%</Text>
@@ -140,10 +173,12 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="trophy-outline"
                   size={28}
-                  color={Colors.onSecondaryContainer}
+                  color={colors.onSecondaryContainer}
                 />
               </View>
-              <Text style={[styles.statNumber, styles.greenText]}>#3</Text>
+              <Text style={[styles.statNumber, styles.greenText]}>
+                #{currentUserRank || 1}
+              </Text>
               <Text style={[styles.statLabel, styles.greenLabelText]}>
                 FRIEND RANK
               </Text>
@@ -152,7 +187,7 @@ export default function DashboardScreen() {
 
           {/* Quick Tip (Implement Gemini AI to provide personalized tips)*/}
           <View style={styles.tipCard}>
-            <Ionicons name="bulb-outline" size={22} color={Colors.primary} />
+            <Ionicons name="bulb-outline" size={22} color={colors.primary} />
             <Text style={styles.tipText}>
               "Clean plastic containers before scanning to ensure they can be
               recycled effectively."
@@ -162,6 +197,47 @@ export default function DashboardScreen() {
 
         {/* Trash Recycled */}
         <View style={styles.archiveSection}>
+          <View style={styles.leaderboardSection}>
+            <View style={styles.archiveHeader}>
+              <Text style={styles.archiveTitle}>Friends Leaderboard</Text>
+            </View>
+
+            {leaderboardLoading ? (
+              <View style={styles.leaderboardLoading}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.archiveMeta}>Loading standings...</Text>
+              </View>
+            ) : (
+              <View style={styles.leaderboardList}>
+                {leaderboard.map((entry) => (
+                  <View
+                    key={entry.id}
+                    style={[
+                      styles.leaderboardRow,
+                      entry.isCurrentUser && styles.leaderboardRowCurrent,
+                    ]}
+                  >
+                    <View style={styles.leaderboardRank}>
+                      <Text style={styles.leaderboardRankText}>#{entry.rank}</Text>
+                    </View>
+                    <View style={styles.leaderboardInfo}>
+                      <Text style={styles.archiveName}>
+                        {entry.displayName}
+                        {entry.isCurrentUser ? " (You)" : ""}
+                      </Text>
+                      <Text style={styles.archiveMeta}>
+                        {entry.scansThisMonth} items recycled this month
+                      </Text>
+                    </View>
+                    <Text style={styles.leaderboardPoints}>
+                      {entry.scansThisMonth}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
           <View style={styles.archiveHeader}>
             <Text style={styles.archiveTitle}> Trash Recycled </Text>
             <TouchableOpacity>
@@ -177,7 +253,7 @@ export default function DashboardScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.archiveIconWrap}>
-                  <Ionicons name={item.icon} size={22} color={Colors.primary} />
+                  <Ionicons name={item.icon} size={22} color={colors.primary} />
                 </View>
                 <View style={styles.archiveInfo}>
                   <Text style={styles.archiveName}>{item.name}</Text>
@@ -188,7 +264,7 @@ export default function DashboardScreen() {
                 <Ionicons
                   name="chevron-forward"
                   size={18}
-                  color={Colors.outline}
+                  color={colors.outline}
                 />
               </TouchableOpacity>
             ))}
@@ -199,10 +275,11 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
 
   // ── Header ──────────────────────────────────────────────
@@ -212,7 +289,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
-    backgroundColor: Colors.background + "CC", // ~80% opacity
+    backgroundColor: colors.background + "CC",
   },
   headerLeft: {
     flexDirection: "row",
@@ -224,14 +301,20 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.primaryContainer + "55",
+    backgroundColor: colors.primaryContainer + "55",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   appName: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.titleLg,
-    color: Colors.primary,
+    color: colors.primary,
     letterSpacing: -0.5,
   },
   headerRight: {
@@ -244,6 +327,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconBtnActive: {
+    backgroundColor: colors.primary,
   },
 
   // ── Scroll ───────────────────────────────────────────────
@@ -263,14 +349,14 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.headlineLg,
-    color: Colors.primary,
+    color: colors.primary,
     letterSpacing: -0.5,
     marginBottom: 4,
   },
   welcomeSubtitle: {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.bodyMd,
-    color: Colors.textMuted,
+    color: colors.textMuted,
   },
 
   // ── Scan CTA ─────────────────────────────────────────────
@@ -288,7 +374,7 @@ const styles = StyleSheet.create({
   scanText: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.titleLg,
-    color: Colors.onPrimary,
+    color: colors.onPrimary,
   },
 
   // ── Stats Grid ───────────────────────────────────────────
@@ -299,7 +385,7 @@ const styles = StyleSheet.create({
 
   // Impact Petal
   impactPetal: {
-    backgroundColor: Colors.tertiaryContainer,
+    backgroundColor: colors.tertiaryContainer,
     borderRadius: Radii.lg,
     paddingVertical: Spacing.xxl,
     alignItems: "center",
@@ -349,10 +435,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   statCardLight: {
-    backgroundColor: Colors.surfaceContainerLow,
+    backgroundColor: colors.surfaceContainerLow,
   },
   statCardGreen: {
-    backgroundColor: Colors.secondaryContainer,
+    backgroundColor: colors.secondaryContainer,
   },
   statCardTop: {
     flexDirection: "row",
@@ -360,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   percentBadge: {
-    backgroundColor: Colors.tertiaryContainer + "44",
+    backgroundColor: colors.tertiaryContainer + "44",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radii.full,
@@ -368,40 +454,40 @@ const styles = StyleSheet.create({
   percentBadgeText: {
     fontFamily: FontFamily.bodyBold,
     fontSize: 11,
-    color: Colors.tertiary,
+    color: colors.tertiary,
   },
   creditIconWrap: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.onSecondaryContainer + "18",
+    backgroundColor: colors.onSecondaryContainer + "18",
     alignItems: "center",
     justifyContent: "center",
   },
   statNumber: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.headlineMd,
-    color: Colors.primary,
+    color: colors.primary,
     letterSpacing: -0.5,
   },
   statLabel: {
     fontFamily: FontFamily.bodySemiBold,
     fontSize: TypeScale.label,
-    color: Colors.textMuted,
+    color: colors.textMuted,
     letterSpacing: 0.5,
   },
   greenText: {
-    color: Colors.onSecondaryContainer,
+    color: colors.onSecondaryContainer,
   },
   greenLabelText: {
-    color: Colors.onSecondaryContainer,
+    color: colors.onSecondaryContainer,
     opacity: 0.7,
     letterSpacing: 0.5,
   },
 
   // Quick Tip
   tipCard: {
-    backgroundColor: Colors.surfaceContainerHighest,
+    backgroundColor: colors.surfaceContainerHighest,
     borderRadius: Radii.lg,
     padding: Spacing.lg,
     flexDirection: "row",
@@ -411,7 +497,7 @@ const styles = StyleSheet.create({
   tipText: {
     fontFamily: FontFamily.bodyMedium,
     fontSize: TypeScale.bodySm,
-    color: Colors.primary,
+    color: colors.primary,
     lineHeight: 20,
     flex: 1,
     fontStyle: "italic",
@@ -419,6 +505,52 @@ const styles = StyleSheet.create({
 
   // ── Recent Archive ────────────────────────────────────────
   archiveSection: {},
+  leaderboardSection: {
+    marginBottom: Spacing.xl,
+  },
+  leaderboardLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+  },
+  leaderboardList: {
+    gap: Spacing.sm,
+  },
+  leaderboardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: colors.surfaceContainerLow,
+  },
+  leaderboardRowCurrent: {
+    backgroundColor: colors.secondaryContainer,
+  },
+  leaderboardRank: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.surfaceContainerHighest,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  leaderboardRankText: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.bodyMd,
+    color: colors.primary,
+  },
+  leaderboardInfo: {
+    flex: 1,
+  },
+  leaderboardPoints: {
+    fontFamily: FontFamily.displayBold,
+    fontSize: TypeScale.titleMd,
+    color: colors.primary,
+  },
   archiveHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -428,13 +560,13 @@ const styles = StyleSheet.create({
   archiveTitle: {
     fontFamily: FontFamily.displayBold,
     fontSize: TypeScale.titleLg,
-    color: Colors.primary,
+    color: colors.primary,
     letterSpacing: -0.3,
   },
   viewAll: {
     fontFamily: FontFamily.bodyBold,
     fontSize: TypeScale.bodySm,
-    color: Colors.primary,
+    color: colors.primary,
   },
   archiveList: {
     gap: Spacing.sm,
@@ -444,14 +576,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.md,
     padding: Spacing.md,
-    backgroundColor: Colors.surfaceContainerLow,
+    backgroundColor: colors.surfaceContainerLow,
     borderRadius: Radii.md,
   },
   archiveIconWrap: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.surfaceContainerHigh,
+    backgroundColor: colors.surfaceContainerHigh,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -461,12 +593,13 @@ const styles = StyleSheet.create({
   archiveName: {
     fontFamily: FontFamily.bodyBold,
     fontSize: TypeScale.bodyMd,
-    color: Colors.primary,
+    color: colors.primary,
     marginBottom: 2,
   },
   archiveMeta: {
     fontFamily: FontFamily.body,
     fontSize: TypeScale.label,
-    color: Colors.textMuted,
+    color: colors.textMuted,
   },
 });
+}
