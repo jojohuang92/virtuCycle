@@ -1,6 +1,6 @@
 # VirtuCycle
 
-A mobile app that uses AI-powered image recognition to help users sort waste correctly. Point your camera at an item, and VirtuCycle tells you exactly which bin it belongs in — customized to your city's recycling rules.
+A mobile app that uses AI-powered image recognition to help users sort waste correctly. Point your camera at an item, and VirtuCycle tells you exactly which bin it belongs in and customized to your city's recycling rules.
 
 ## Features
 
