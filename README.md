@@ -2,6 +2,8 @@
 
 A mobile app that uses AI-powered image recognition to help users sort waste correctly. Point your camera at an item, and VirtuCycle tells you exactly which bin it belongs in and customized to your city's recycling rules.
 
+## DEV POST:
+https://devpost.com/software/virtucycle
 ## Features
 
 - **AI-Powered Scanner** — Multi-stage detection pipeline: on-device ML Kit → Gemini Vision → Claude Vision, ensuring accurate classification into recycling, trash, compost, or hazardous bins
